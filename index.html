@@ -284,7 +284,7 @@ async function doSave(){
 }
 addEventListener('pagehide',saveNow);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveNow()});
-$('title').oninput=scheduleSave;
+$('title').oninput=()=>{document.title='ペイント - '+($('title').value.trim()||'無題');scheduleSave()};
 
 function snapshot(){return JSON.stringify({c:canvas.toJSON(),layers:layers,active:activeLayer})}
 function snap(){if(busy)return;hist.push(snapshot());if(hist.length>60)hist.shift();redoS=[];scheduleSave()}
