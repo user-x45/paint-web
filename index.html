@@ -100,6 +100,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .pbtn{border:0;background:var(--accent);color:#fff;font:inherit;font-weight:600;padding:9px 18px;border-radius:6px;cursor:pointer}
 @media (prefers-color-scheme:dark){.pbtn{color:#00243d}}
 .pbtn:hover{filter:brightness(1.08)}
+.pbtn.sec{background:var(--panel);color:var(--ink);border:1px solid var(--line);font-weight:400}
 .sub{color:var(--muted);margin:0 0 12px}
 #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;position:relative}
@@ -132,11 +133,13 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 </style>
 </head>
 <body>
+<input type="file" id="imgIn" accept="image/*" hidden>
 
 <div id="home">
   <div class="hhead">
     <h1>ペイント</h1>
     <button class="pbtn" id="homeNew"><i class="ti ti-plus" aria-hidden="true"></i>新規作成</button>
+    <button class="pbtn sec" id="homeImg"><i class="ti ti-photo-plus" aria-hidden="true"></i>画像から新規作成</button>
   </div>
   <p class="sub">保存した絵（このブラウザに自動保存されています）</p>
   <div id="grid"></div>
@@ -161,6 +164,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
     <button class="ib" data-t="rect" title="四角形" data-ic="rect"></button>
     <button class="ib" data-t="ellipse" title="楕円" data-ic="ellipse"></button>
     <select id="fillm" aria-label="図形の塗り"><option value="outline">輪郭</option><option value="both">輪郭+塗り</option><option value="fill">塗りのみ</option></select></div><small>図形</small></div>
+  <div class="g"><div class="row"><button class="ib" id="imgBtn" title="画像を読み込む" aria-label="画像を読み込む" data-ic="photo"></button></div><small>画像</small></div>
   <div class="g"><div class="row"><input type="range" id="lw" min="1" max="40" value="4" aria-label="サイズ"><span id="lwv">4px</span></div><small>サイズ</small></div>
   <div class="g"><div class="row">
     <div id="cur"><div id="bgb" style="background:#fff"></div><div id="fgb" class="t" style="background:#000"></div></div>
@@ -190,7 +194,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 
 <script>
 const $=id=>document.getElementById(id);
-const P={select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-oval',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots'};
+const P={select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus'};
 const ic=n=>'<i class="'+P[n]+'" aria-hidden="true"></i>';
 document.querySelectorAll('[data-ic]').forEach(b=>{b.innerHTML=ic(b.dataset.ic)});
 
@@ -324,7 +328,7 @@ function shareCurrent(){
 $('share').onclick=shareCurrent;
 $('save').onclick=()=>{canvas.discardActiveObject();canvas.renderAll();const a=document.createElement('a');a.href=canvas.toDataURL({format:'png',multiplier:2});a.download=($('title').value.trim()||'無題')+'.png';a.click()};
 
-function applyBrush(){if(!canvas.isDrawingMode)return;canvas.freeDrawingBrush.color=tool==='eraser'?'rgba(128,128,128,.4)':fg;canvas.freeDrawingBrush.width=tool==='eraser'?lw*3:lw}
+function applyBrush(){if(!canvas.isDrawingMode)return;canvas.freeDrawingBrush.color=tool==='eraser'?'rgba(0,0,0,0)':fg;canvas.freeDrawingBrush.width=tool==='eraser'?lw*3:lw}
 function setTool(t){
   tool=t;
   document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
@@ -432,10 +436,27 @@ function applyLayerState(){
     o.evented=(sel||(tool==='eraser'&&o.layer===activeLayer))&&!L.locked&&!er;
   });
 }
+function hookEraser(b){
+  let prev=null;
+  const mv=b.onMouseMove.bind(b),up=b.onMouseUp.bind(b);
+  b.onMouseMove=function(pt,o){
+    mv(pt,o);
+    if(!this._points||this._points.length<2)return;
+    const d=this.convertPointsToSVGPath(this._points);
+    if(this._isEmptySVGPath&&this._isEmptySVGPath(d))return;
+    const path=this.createPath(d);
+    path.set({stroke:'#000',globalCompositeOperation:'destination-out',selectable:false,evented:false,layer:activeLayer});
+    busy=true;if(prev)canvas.remove(prev);canvas.add(path);busy=false;prev=path;
+  };
+  b.onMouseUp=function(o){
+    if(prev){busy=true;canvas.remove(prev);busy=false;prev=null}
+    return up(o);
+  };
+}
 function refreshMode(){
   const dm=(tool==='pen'||tool==='eraser')&&editable();
   canvas.isDrawingMode=dm;
-  if(dm){canvas.freeDrawingBrush=new fabric.PencilBrush(canvas);applyBrush()}
+  if(dm){canvas.freeDrawingBrush=new fabric.PencilBrush(canvas);if(tool==='eraser')hookEraser(canvas.freeDrawingBrush);applyBrush()}
   $('hint').textContent=hints[tool]+((tool!=='select'&&!editable())?' ※選択中のレイヤーは編集できません。':'');
 }
 let dragMoved=false;
@@ -784,6 +805,55 @@ async function renderHome(){
   });
   $('empty').hidden=idx.length>0;
 }
+function prepImage(file){
+  return new Promise((res,rej)=>{
+    const u=URL.createObjectURL(file),im=new Image();
+    im.onload=()=>{
+      const nw=im.naturalWidth,nh=im.naturalHeight;
+      if(!nw||!nh){URL.revokeObjectURL(u);rej(new Error('size'));return}
+      const k=Math.min(1,1920/Math.max(nw,nh));
+      const w=Math.max(1,Math.round(nw*k)),h=Math.max(1,Math.round(nh*k));
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(im,0,0,w,h);
+      URL.revokeObjectURL(u);
+      const alpha=/png|gif|webp|svg/.test(file.type);
+      res({url:c.toDataURL(alpha?'image/png':'image/jpeg',.92),w,h});
+    };
+    im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('load'))};
+    im.src=u;
+  });
+}
+function placeImage(p,fill){
+  return new Promise(res=>{
+    fabric.Image.fromURL(p.url,img=>{
+      const k=Math.min(CW/p.w,CH/p.h),s=fill?k:Math.min(1,k);
+      img.set({left:(CW-p.w*s)/2,top:(CH-p.h*s)/2,scaleX:s,scaleY:s});
+      canvas.add(img);setTool('select');canvas.setActiveObject(img);canvas.renderAll();res();
+    });
+  });
+}
+let imgMode=null;
+function chooseImage(mode){imgMode=mode;const f=$('imgIn');f.value='';f.click()}
+$('imgIn').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  const mode=imgMode;
+  let p;
+  try{p=await prepImage(f)}catch(err){toast('画像を読み込めませんでした');return}
+  if(mode==='new'){
+    newDrawing();
+    const n=f.name.replace(/\.[^.]+$/,'').slice(0,40);
+    $('title').value=n;document.title='ペイント - '+(n||'無題');
+    await placeImage(p,true);
+  }else{
+    const L=layerOf(activeLayer);
+    if(L&&L.bg)setActive(drawLayerId());
+    if(blocked())return;
+    await placeImage(p,false);
+  }
+};
+$('homeImg').onclick=()=>chooseImage('new');
+$('imgBtn').onclick=()=>chooseImage('add');
+
 renderHome();
 </script>
 </body>
