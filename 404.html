@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - ページが見つかりません</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+        .error-code {
+            font-size: 96px;
+            font-weight: 800;
+            color: #2b2d42;
+            line-height: 1;
+            margin-bottom: 16px;
+            transition: color 0.3s ease;
+        }
+        .error-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #4a4e69;
+            margin-bottom: 12px;
+            transition: color 0.3s ease;
+        }
+        .error-message {
+            font-size: 15px;
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 32px;
+            transition: color 0.3s ease;
+        }
+        .home-btn {
+            display: inline-block;
+            padding: 12px 28px;
+            background-color: #2b2d42;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 500;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .home-btn:hover {
+            background-color: #4a4e69;
+        }
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #121212;
+                color: #e0e0e0;
+            }
+            .error-code {
+                color: #f8f9fa;
+            }
+            .error-title {
+                color: #d1d5db;
+            }
+            .error-message {
+                color: #9ca3af;
+            }
+            .home-btn {
+                background-color: #3b82f6;
+                color: #ffffff;
+            }
+            .home-btn:hover {
+                background-color: #2563eb;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="error-code">404</h1>
+        <h2 class="error-title">ページが見つかりません</h2>
+        <p class="error-message">お探しのページは削除されたか、URLが変更された可能性があります。<br>入力したアドレスが正しいかご確認ください。</p>
+        <a href="/" class="home-btn">トップページへ戻る</a>
+    </div>
+</body>
+</html>
