@@ -1,0 +1,52 @@
+{
+  "id": "./",
+  "name": "ペイント",
+  "short_name": "ペイント",
+  "description": "ブラウザで使えるシンプルなペイントツール。ペン・図形・テキスト・レイヤーに対応し、描いた絵は自動で保存されます。",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f3f3f3",
+  "theme_color": "#f3f3f3",
+  "categories": ["graphics", "photo", "productivity"],
+  "icons": [
+    {
+      "src": "favicon/192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "favicon/512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/1.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "ペンや図形で自由に描ける"
+    },
+    {
+      "src": "screenshots/2.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "レイヤーで重ねて描ける"
+    },
+    {
+      "src": "screenshots/3.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "描いた絵は自動で保存"
+    }
+  ]
+}
