@@ -96,7 +96,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 </div>
 
 <div id="editor" hidden>
-<div class="top"><button id="home_btn">← ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="clear">全消去</button><button id="save">PNGで保存</button></div>
+<div class="top"><button id="home_btn">← ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save">画像として保存</button><button id="share">共有</button></div>
 <div class="ribbon">
   <div class="g"><div class="row">
     <button class="ib" id="undo" title="元に戻す" data-ic="undo"></button>
@@ -158,8 +158,9 @@ const canvas=new fabric.Canvas('c',{backgroundColor:'#fff',selection:true,preser
 let tool='pen',fg='#000000',bg='#ffffff',target='fg',lw=4,drawing=null,start=null,hist=[],redoS=[],busy=false;
 let curId=null,curCreated=0,dirty=false,saveTimer=null,chain=Promise.resolve();
 const hints={select:'オブジェクトをクリックして移動・変形します。',eraser:'ドラッグで消します。図形はクリックで削除。',pen:'ドラッグで自由に描きます。',text:'キャンバスをクリックして文字を入力します。',line:'ドラッグで直線を描きます。',arrow:'ドラッグで矢印を描きます。',rect:'ドラッグで四角形を描きます。',ellipse:'ドラッグで楕円を描きます。'};
+const CW=1152,CH=648;
 function setSize(w,h){canvas.setWidth(w);canvas.setHeight(h);canvas.renderAll();$('size').textContent=w+' × '+h+' px'}
-function fit(){const d=$('desk');setSize(Math.max(280,d.clientWidth-34),Math.max(240,d.clientHeight-34))}
+function fit(){setSize(CW,CH)}
 
 '000000 7f7f7f 880015 ed1c24 ff7f27 fff200 22b14c 00a2e8 3f48cc a349a4 ffffff c3c3c3 b97a57 ffaec9 ffc90e efe4b0 b5e61d 99d9ea 7092be c8bfe7'.split(' ').forEach(h=>{
   const b=document.createElement('button');b.style.background='#'+h;b.title='#'+h;
@@ -198,7 +199,17 @@ canvas.on('object:added',snap);canvas.on('object:modified',snap);canvas.on('obje
 $('undo').onclick=()=>{if(hist.length>1){redoS.push(hist.pop());load(hist[hist.length-1])}};
 $('redo').onclick=()=>{if(redoS.length){const s=redoS.pop();hist.push(s);load(s)}};
 $('del').onclick=()=>{canvas.getActiveObjects().forEach(o=>canvas.remove(o));canvas.discardActiveObject();canvas.renderAll()};
-$('clear').onclick=async()=>{if(!await uiConfirm('現在の絵をすべて消しますか？',{ok:'消去',danger:true}))return;busy=true;canvas.clear();canvas.backgroundColor='#fff';busy=false;canvas.renderAll();snap()};
+function shareCurrent(){
+  canvas.discardActiveObject();canvas.renderAll();
+  const name=($('title').value.trim()||'無題').replace(/[\\/:*?"<>|]/g,'_')+'.png';
+  fetch(canvas.toDataURL({format:'png',multiplier:2})).then(r=>r.blob()).then(b=>{
+    const f=new File([b],name,{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[f]}))
+      return navigator.share({files:[f],title:$('title').value.trim()||'無題'}).catch(e=>{if(e.name!=='AbortError')toast('共有できませんでした')});
+    toast('このブラウザはファイルの共有に対応していません。「画像として保存」をご利用ください');
+  }).catch(()=>toast('画像の作成に失敗しました'));
+}
+$('share').onclick=shareCurrent;
 $('save').onclick=()=>{canvas.discardActiveObject();canvas.renderAll();const a=document.createElement('a');a.href=canvas.toDataURL({format:'png',multiplier:2});a.download=($('title').value.trim()||'無題')+'.png';a.click()};
 
 function applyBrush(){if(!canvas.isDrawingMode)return;canvas.freeDrawingBrush.color=tool==='eraser'?'#ffffff':fg;canvas.freeDrawingBrush.width=tool==='eraser'?lw*3:lw}
@@ -284,7 +295,7 @@ async function openDrawing(id){
   showEditor();
   busy=true;
   canvas.loadFromJSON(d.c,()=>{
-    setSize(d.w||canvas.width,d.h||canvas.height);
+    setSize(CW,CH);
     busy=false;resetHist();setTool('pen');
   });
 }
@@ -308,7 +319,7 @@ async function renderPng(id){
   const d=await getData(id);
   if(!d)throw new Error('データが見つかりません');
   const el=document.createElement('canvas');
-  const sc=new fabric.StaticCanvas(el,{width:d.w,height:d.h});
+  const sc=new fabric.StaticCanvas(el,{width:CW,height:CH});
   await new Promise(res=>sc.loadFromJSON(d.c,res));
   sc.renderAll();
   const url=sc.toDataURL({format:'png',multiplier:2});
