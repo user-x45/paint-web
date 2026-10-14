@@ -589,7 +589,13 @@ COLORS.forEach(h=>{
 $('lbgc').oninput=e=>setBgColor(e.target.value);
 $('lbgc').onchange=()=>snap();
 
-function showEditor(){$('home').hidden=true;$('editor').hidden=false;document.title='ペイント - '+($('title').value||'無題')}
+function resetTools(){
+  fg='#000000';bg='#ffffff';lw=4;
+  $('lw').value=4;$('lwv').textContent='4px';
+  $('fgb').style.background=fg;$('bgb').style.background=bg;pick('fg');
+  $('custom').value='#0067c0';$('fillm').value='outline';
+}
+function showEditor(){resetTools();$('home').hidden=true;$('editor').hidden=false;document.title='ペイント - '+($('title').value||'無題')}
 function resetHist(){hist=[snapshot()];redoS=[]}
 function newDrawing(){
   curId=uid();curCreated=Date.now();dirty=false;
