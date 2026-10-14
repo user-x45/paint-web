@@ -166,6 +166,7 @@ function fitView(){
   const k=Math.min(aw/CW,ah/CH);
   canvas.setDimensions({width:Math.floor(CW*k)+'px',height:Math.floor(CH*k)+'px'},{cssOnly:true});
   canvas.calcOffset();
+  canvas.renderAll();
 }
 function setSize(w,h){canvas.setWidth(w);canvas.setHeight(h);fitView();canvas.renderAll();$('size').textContent=w+' × '+h+' px'}
 function fit(){setSize(CW,CH)}
