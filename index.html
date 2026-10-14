@@ -64,7 +64,18 @@ input[type=range]{width:96px;accent-color:var(--accent)}
 #lname:disabled{opacity:.6}
 #lop{flex:1;min-width:0}
 #lopv{width:40px;text-align:right;color:var(--muted)}
-#lbgc{width:44px;height:30px;padding:2px}
+#lbgRow{flex-direction:column;align-items:flex-start;gap:6px}
+.bgl{display:flex;align-items:center;gap:8px}
+#bgp{display:grid;grid-template-columns:repeat(10,16px);gap:3px}
+#bgp button{width:16px;height:16px;padding:0;border-radius:50%;border:1px solid rgba(128,128,128,.5);cursor:pointer}
+#bgp button:hover{transform:scale(1.2)}
+#bgp button.cur{box-shadow:0 0 0 2px var(--accent)}
+#lbgc{width:30px;height:30px;padding:2px}
+.grip{width:16px;height:28px;display:grid;place-items:center;flex:none;color:var(--muted);touch-action:none;cursor:grab}
+.grip svg{width:16px;height:16px}
+.lr.drag{opacity:.5}
+.lr.drop-top{box-shadow:0 -2px 0 var(--accent)}
+.lr.drop-bot{box-shadow:0 2px 0 var(--accent)}
 @media (max-width:720px){#work{flex-direction:column}#lpanel{width:auto;height:240px}}
 #sheet{display:block;flex:none;line-height:0;background:conic-gradient(#d9d9d9 25%,#fff 0 50%,#d9d9d9 0 75%,#fff 0) 0 0/16px 16px;box-shadow:0 2px 10px rgba(0,0,0,.25);touch-action:none}
 .status{display:flex;gap:18px;padding:6px 14px;color:var(--muted);font-size:12px}
@@ -158,7 +169,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
   <div id="lset">
     <div class="ls"><label for="lname">名前</label><input id="lname" maxlength="20"></div>
     <div class="ls" id="lopRow"><label for="lop">不透明度</label><input type="range" id="lop" min="0" max="100" value="100"><span id="lopv">100%</span></div>
-    <div class="ls" id="lbgRow" hidden><label for="lbgc">背景色</label><input type="color" id="lbgc" value="#ffffff"></div>
+    <div class="ls" id="lbgRow" hidden><label for="lbgc">背景色</label><div class="bgl"><div id="bgp"></div><input type="color" id="lbgc" value="#ffffff" title="色の編集"></div></div>
   </div>
 </aside>
 </div>
@@ -167,7 +178,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 
 <script>
 const $=id=>document.getElementById(id);
-const P={select:'<path d="M6 3l12 9-5.5 1.2L9.5 19z"/>',pen:'<path d="M4 20l1-4L16 5l3 3L8 19z M14 7l3 3"/>',eraser:'<path d="M4 15l9-9 6 6-7 7H8z M9 20h11"/>',text:'<path d="M5 6V4h14v2 M12 4v16 M9 20h6"/>',line:'<path d="M5 19L19 5"/>',arrow:'<path d="M5 19L19 5 M10 5h9v9"/>',rect:'<rect x="4" y="6" width="16" height="12" rx="2"/>',ellipse:'<ellipse cx="12" cy="12" rx="8" ry="6"/>',undo:'<path d="M9 14L4 9l5-5 M4 9h10a6 6 0 010 12h-4"/>',redo:'<path d="M15 14l5-5-5-5 M20 9H10a6 6 0 000 12h4"/>',trash:'<path d="M5 7h14 M9 7V4h6v3 M7 7l1 13h8l1-13"/>',layers:'<path d="M12 3l9 5-9 5-9-5z M3 13l9 5 9-5"/>',close:'<path d="M6 6l12 12 M18 6L6 18"/>',plus:'<path d="M12 5v14 M5 12h14"/>',up:'<path d="M6 14l6-6 6 6"/>',down:'<path d="M6 10l6 6 6-6"/>',eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',eyeoff:'<path d="M3 3l18 18 M10.6 6.1A9.7 9.7 0 0112 6c6 0 10 6 10 6a17 17 0 01-3.2 3.9 M6.5 7.5A17 17 0 002 12s4 7 10 7c1.6 0 3-.4 4.3-1 M9.9 9.9a3 3 0 004.2 4.2"/>',lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>',unlock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 017.5-2"/>'};
+const P={select:'<path d="M6 3l12 9-5.5 1.2L9.5 19z"/>',pen:'<path d="M4 20l1-4L16 5l3 3L8 19z M14 7l3 3"/>',eraser:'<path d="M4 15l9-9 6 6-7 7H8z M9 20h11"/>',text:'<path d="M5 6V4h14v2 M12 4v16 M9 20h6"/>',line:'<path d="M5 19L19 5"/>',arrow:'<path d="M5 19L19 5 M10 5h9v9"/>',rect:'<rect x="4" y="6" width="16" height="12" rx="2"/>',ellipse:'<ellipse cx="12" cy="12" rx="8" ry="6"/>',undo:'<path d="M9 14L4 9l5-5 M4 9h10a6 6 0 010 12h-4"/>',redo:'<path d="M15 14l5-5-5-5 M20 9H10a6 6 0 000 12h4"/>',trash:'<path d="M5 7h14 M9 7V4h6v3 M7 7l1 13h8l1-13"/>',grip:'<circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/>',layers:'<path d="M12 3l9 5-9 5-9-5z M3 13l9 5 9-5"/>',close:'<path d="M6 6l12 12 M18 6L6 18"/>',plus:'<path d="M12 5v14 M5 12h14"/>',up:'<path d="M6 14l6-6 6 6"/>',down:'<path d="M6 10l6 6 6-6"/>',eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',eyeoff:'<path d="M3 3l18 18 M10.6 6.1A9.7 9.7 0 0112 6c6 0 10 6 10 6a17 17 0 01-3.2 3.9 M6.5 7.5A17 17 0 002 12s4 7 10 7c1.6 0 3-.4 4.3-1 M9.9 9.9a3 3 0 004.2 4.2"/>',lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>',unlock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 017.5-2"/>'};
 const ic=n=>'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+P[n]+'</svg>';
 document.querySelectorAll('[data-ic]').forEach(b=>{b.innerHTML=ic(b.dataset.ic)});
 
@@ -243,7 +254,8 @@ function setSize(w,h){canvas.setWidth(w);canvas.setHeight(h);fitView();canvas.re
 function fit(){setSize(CW,CH)}
 new ResizeObserver(fitView).observe($('desk'));
 
-'000000 7f7f7f 880015 ed1c24 ff7f27 fff200 22b14c 00a2e8 3f48cc a349a4 ffffff c3c3c3 b97a57 ffaec9 ffc90e efe4b0 b5e61d 99d9ea 7092be c8bfe7'.split(' ').forEach(h=>{
+const COLORS='000000 7f7f7f 880015 ed1c24 ff7f27 fff200 22b14c 00a2e8 3f48cc a349a4 ffffff c3c3c3 b97a57 ffaec9 ffc90e efe4b0 b5e61d 99d9ea 7092be c8bfe7'.split(' ');
+COLORS.forEach(h=>{
   const b=document.createElement('button');b.style.background='#'+h;b.title='#'+h;
   b.onclick=()=>setCol('#'+h);b.oncontextmenu=e=>{e.preventDefault();setCol('#'+h,'bg')};$('sw').appendChild(b)});
 function setCol(c,t){t=t||target;if(t==='fg')fg=c;else bg=c;$(t==='fg'?'fgb':'bgb').style.background=c;applyBrush()}
@@ -414,17 +426,63 @@ function refreshMode(){
   if(dm){canvas.freeDrawingBrush=new fabric.PencilBrush(canvas);applyBrush()}
   $('hint').textContent=hints[tool]+((tool!=='select'&&!editable())?' ※選択中のレイヤーは編集できません。':'');
 }
+let dragMoved=false;
+function dropLayer(id,ins){
+  const disp=layers.filter(l=>!l.bg).reverse().map(l=>l.id);
+  const from=disp.indexOf(id);
+  if(from<0)return;
+  const to=ins>from?ins-1:ins;
+  if(to===from)return;
+  disp.splice(from,1);disp.splice(to,0,id);
+  const next=[layers.find(l=>l.bg),...disp.reverse().map(layerOf)];
+  layers.splice(0,layers.length,...next);
+  reorder();renderLayers();canvas.renderAll();snap();
+}
+function startDrag(e,row,L){
+  if(e.button!==0||e.target.closest('button'))return;
+  if(e.pointerType==='touch'&&!e.target.closest('.grip'))return;
+  const list=$('llist'),y0=e.clientY;
+  let on=false,ins=0;
+  const rows=()=>[...list.children].filter(r=>!r.classList.contains('bgrow'));
+  const clear=()=>rows().forEach(r=>r.classList.remove('drop-top','drop-bot'));
+  const move=ev=>{
+    if(!on){if(Math.abs(ev.clientY-y0)<5)return;on=true;row.classList.add('drag')}
+    const rs=rows();ins=0;
+    rs.forEach(r=>{const bx=r.getBoundingClientRect();if(ev.clientY>bx.top+bx.height/2)ins++});
+    clear();
+    rs[Math.min(ins,rs.length-1)].classList.add(ins<rs.length?'drop-top':'drop-bot');
+  };
+  const end=ev=>{
+    document.removeEventListener('pointermove',move);
+    document.removeEventListener('pointerup',end);
+    document.removeEventListener('pointercancel',end);
+    if(!on)return;
+    dragMoved=true;setTimeout(()=>{dragMoved=false},0);
+    row.classList.remove('drag');clear();
+    if(ev.type==='pointerup')dropLayer(L.id,ins);
+  };
+  document.addEventListener('pointermove',move);
+  document.addEventListener('pointerup',end);
+  document.addEventListener('pointercancel',end);
+}
+function setBgColor(c){
+  const L=layerOf(activeLayer);
+  if(!L||!L.bg)return;
+  L.color=c;applyBackground();canvas.renderAll();renderLayers();
+}
 function renderLayers(){
   const list=$('llist');list.innerHTML='';
   [...layers].reverse().forEach(L=>{
     const row=document.createElement('div');
-    row.className='lr'+(L.id===activeLayer?' on':'')+(L.visible?'':' off');
+    row.className='lr'+(L.id===activeLayer?' on':'')+(L.visible?'':' off')+(L.bg?' bgrow':'');
     row.tabIndex=0;
+    const grip=document.createElement('span');grip.className='grip';
+    if(!L.bg)grip.innerHTML=ic('grip');else grip.style.visibility='hidden';
     const eye=document.createElement('button');eye.className='ib';eye.innerHTML=ic(L.visible?'eye':'eyeoff');
     eye.title=L.visible?'非表示にする':'表示する';eye.setAttribute('aria-label',eye.title);
     eye.onclick=e=>{e.stopPropagation();toggleVisible(L)};
     eye.onkeydown=e=>e.stopPropagation();
-    row.append(eye);
+    row.append(grip,eye);
     if(L.bg){const sw=document.createElement('span');sw.className='bgsw';sw.style.background=L.color;row.append(sw)}
     const nm=document.createElement('span');nm.className='nm';nm.textContent=L.name;
     row.append(nm);
@@ -435,8 +493,9 @@ function renderLayers(){
       lk.onclick=e=>{e.stopPropagation();toggleLocked(L)};
       lk.onkeydown=e=>e.stopPropagation();
       row.append(lk);
+      row.onpointerdown=e=>startDrag(e,row,L);
     }
-    row.onclick=()=>setActive(L.id);
+    row.onclick=()=>{if(!dragMoved)setActive(L.id)};
     row.onkeydown=e=>{if(e.key==='Enter')setActive(L.id)};
     list.appendChild(row);
   });
@@ -447,7 +506,10 @@ function renderLayers(){
   const op=Math.round((A.opacity==null?1:A.opacity)*100);
   $('lop').value=op;$('lopv').textContent=op+'%';
   $('lbgRow').hidden=!A.bg;
-  if(A.bg)$('lbgc').value=A.color;
+  if(A.bg){
+    $('lbgc').value=A.color;
+    [...$('bgp').children].forEach(b=>b.classList.toggle('cur','#'+b.dataset.c===A.color.toLowerCase()));
+  }
   $('lup').disabled=$('ldown').disabled=$('ldel').disabled=!!A.bg;
 }
 function setActive(id){
@@ -518,10 +580,13 @@ $('lop').oninput=e=>{
   const v=+e.target.value;L.opacity=v/100;$('lopv').textContent=v+'%';canvas.renderAll();
 };
 $('lop').onchange=()=>snap();
-$('lbgc').oninput=e=>{
-  const L=layerOf(activeLayer);if(!L||!L.bg)return;
-  L.color=e.target.value;applyBackground();canvas.renderAll();renderLayers();
-};
+COLORS.forEach(h=>{
+  const b=document.createElement('button');
+  b.style.background='#'+h;b.title='#'+h;b.dataset.c=h;b.setAttribute('aria-label','背景色 #'+h);
+  b.onclick=()=>{setBgColor('#'+h);snap()};
+  $('bgp').appendChild(b);
+});
+$('lbgc').oninput=e=>setBgColor(e.target.value);
 $('lbgc').onchange=()=>snap();
 
 function showEditor(){$('home').hidden=true;$('editor').hidden=false;document.title='ペイント - '+($('title').value||'無題')}
