@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ペイント</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 <style>
 :root{--bg:#f3f3f3;--panel:#fbfbfb;--ink:#1b1b1b;--muted:#5d5d5d;--line:#e0e0e0;--hover:#ececec;--sel:#d6e8f8;--accent:#0067c0;--desk:#e9e9e9;
@@ -47,6 +48,11 @@ input[type=range]{width:96px;accent-color:var(--accent)}
 .lh b{font-weight:600}
 .lbtns{display:flex}
 .ib.sm{width:28px;height:28px}
+.ib i{font-size:16px;line-height:1}
+.grip i{font-size:14px}
+.top button i,.pbtn i{margin-right:6px}
+.card .x i{font-size:14px;margin:0}
+.card.new .th i{font-size:36px}
 .ib:disabled{opacity:.35;cursor:default}
 .ib:disabled:hover{background:none}
 #llist{flex:1;min-height:60px;overflow:auto;padding:4px;display:flex;flex-direction:column;gap:2px}
@@ -72,7 +78,6 @@ input[type=range]{width:96px;accent-color:var(--accent)}
 #bgp button.cur{box-shadow:0 0 0 2px var(--accent)}
 #lbgc{width:30px;height:30px;padding:2px}
 .grip{width:16px;height:28px;display:grid;place-items:center;flex:none;color:var(--muted);touch-action:none;cursor:grab}
-.grip svg{width:16px;height:16px}
 .lr.drag{opacity:.5}
 .lr.drop-top{box-shadow:0 -2px 0 var(--accent)}
 .lr.drop-bot{box-shadow:0 2px 0 var(--accent)}
@@ -115,7 +120,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .mrow button.ok.danger{background:#d13438;border-color:#d13438;color:#fff}
 @media (prefers-color-scheme:dark){.mrow button.ok:not(.danger){color:#00243d}}
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#323232;color:#fff;padding:9px 16px;border-radius:6px;z-index:60;max-width:90vw}
-.card.new .th{background:var(--desk);color:var(--accent);font-size:42px;font-weight:300}
+.card.new .th{background:var(--desk);color:var(--accent)}
 .empty{color:var(--muted);padding:24px 0}
 </style>
 </head>
@@ -124,7 +129,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 <div id="home">
   <div class="hhead">
     <h1>ペイント</h1>
-    <button class="pbtn" id="homeNew">＋ 新規作成</button>
+    <button class="pbtn" id="homeNew"><i class="fa-solid fa-plus" aria-hidden="true"></i>新規作成</button>
   </div>
   <p class="sub">保存した絵（このブラウザに自動保存されています）</p>
   <div id="grid"></div>
@@ -132,7 +137,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 </div>
 
 <div id="editor" hidden>
-<div class="top"><button id="home_btn">← ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save">画像として保存</button><button id="share">共有</button></div>
+<div class="top"><button id="home_btn"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i>ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save">画像として保存</button><button id="share">共有</button></div>
 <div class="ribbon">
   <div class="g"><div class="row">
     <button class="ib" id="undo" title="元に戻す" data-ic="undo"></button>
@@ -178,8 +183,8 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 
 <script>
 const $=id=>document.getElementById(id);
-const P={select:'<path d="M6 3l12 9-5.5 1.2L9.5 19z"/>',pen:'<path d="M4 20l1-4L16 5l3 3L8 19z M14 7l3 3"/>',eraser:'<path d="M4 15l9-9 6 6-7 7H8z M9 20h11"/>',text:'<path d="M5 6V4h14v2 M12 4v16 M9 20h6"/>',line:'<path d="M5 19L19 5"/>',arrow:'<path d="M5 19L19 5 M10 5h9v9"/>',rect:'<rect x="4" y="6" width="16" height="12" rx="2"/>',ellipse:'<ellipse cx="12" cy="12" rx="8" ry="6"/>',undo:'<path d="M9 14L4 9l5-5 M4 9h10a6 6 0 010 12h-4"/>',redo:'<path d="M15 14l5-5-5-5 M20 9H10a6 6 0 000 12h4"/>',trash:'<path d="M5 7h14 M9 7V4h6v3 M7 7l1 13h8l1-13"/>',grip:'<circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/>',layers:'<path d="M12 3l9 5-9 5-9-5z M3 13l9 5 9-5"/>',close:'<path d="M6 6l12 12 M18 6L6 18"/>',plus:'<path d="M12 5v14 M5 12h14"/>',up:'<path d="M6 14l6-6 6 6"/>',down:'<path d="M6 10l6 6 6-6"/>',eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',eyeoff:'<path d="M3 3l18 18 M10.6 6.1A9.7 9.7 0 0112 6c6 0 10 6 10 6a17 17 0 01-3.2 3.9 M6.5 7.5A17 17 0 002 12s4 7 10 7c1.6 0 3-.4 4.3-1 M9.9 9.9a3 3 0 004.2 4.2"/>',lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>',unlock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 017.5-2"/>'};
-const ic=n=>'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+P[n]+'</svg>';
+const P={select:'fa-solid fa-arrow-pointer',pen:'fa-solid fa-pen',eraser:'fa-solid fa-eraser',text:'fa-solid fa-font',line:'fa-solid fa-slash',arrow:'fa-solid fa-arrow-up-right',rect:'fa-regular fa-square',ellipse:'fa-regular fa-circle',undo:'fa-solid fa-rotate-left',redo:'fa-solid fa-rotate-right',trash:'fa-solid fa-trash',grip:'fa-solid fa-grip-vertical',layers:'fa-solid fa-layer-group',close:'fa-solid fa-xmark',plus:'fa-solid fa-plus',up:'fa-solid fa-chevron-up',down:'fa-solid fa-chevron-down',eye:'fa-solid fa-eye',eyeoff:'fa-solid fa-eye-slash',lock:'fa-solid fa-lock',unlock:'fa-solid fa-lock-open',back:'fa-solid fa-arrow-left',more:'fa-solid fa-ellipsis'};
+const ic=n=>'<i class="'+P[n]+'" aria-hidden="true"></i>';
 document.querySelectorAll('[data-ic]').forEach(b=>{b.innerHTML=ic(b.dataset.ic)});
 
 const dbp=new Promise((res,rej)=>{
@@ -595,7 +600,7 @@ function resetTools(){
   $('fgb').style.background=fg;$('bgb').style.background=bg;pick('fg');
   $('custom').value='#0067c0';$('fillm').value='outline';
 }
-function showEditor(){resetTools();$('home').hidden=true;$('editor').hidden=false;document.title='ペイント - '+($('title').value||'無題')}
+function showEditor(){resetTools();setPanel(false);$('home').hidden=true;$('editor').hidden=false;document.title='ペイント - '+($('title').value||'無題')}
 function resetHist(){hist=[snapshot()];redoS=[]}
 function newDrawing(){
   curId=uid();curCreated=Date.now();dirty=false;
@@ -751,7 +756,7 @@ async function renderHome(){
   catch(e){idx=[];uiAlert('このブラウザでは保存機能（IndexedDB）を利用できません。プライベートモードの場合は通常モードでお試しください。')}
   g.innerHTML='';
   const nb=document.createElement('div');nb.className='card new';nb.tabIndex=0;
-  nb.innerHTML='<div class="th">＋</div><div class="meta"><b>新規作成</b><span>白紙から描き始める</span></div>';
+  nb.innerHTML='<div class="th">'+ic('plus')+'</div><div class="meta"><b>新規作成</b><span>白紙から描き始める</span></div>';
   nb.onclick=newDrawing;nb.onkeydown=e=>{if(e.key==='Enter')newDrawing()};
   g.appendChild(nb);
   idx.forEach(m=>{
@@ -762,7 +767,7 @@ async function renderHome(){
     const t=document.createElement('b');t.textContent=m.title||'無題';
     const s=document.createElement('span');s.textContent=fmt(m.updated);
     meta.append(t,s);
-    const x=document.createElement('button');x.className='x';x.textContent='⋯';x.title='その他';
+    const x=document.createElement('button');x.className='x';x.innerHTML=ic('more');x.title='その他';
     x.setAttribute('aria-label','その他の操作');x.setAttribute('aria-haspopup','menu');
     x.onclick=e=>{e.stopPropagation();openMenu(x,m)};
     x.onkeydown=e=>e.stopPropagation();
