@@ -40,8 +40,8 @@ input[type=range]{width:96px;accent-color:var(--accent)}
 #sw button{width:18px;height:18px;padding:0;border-radius:50%;border:1px solid rgba(128,128,128,.5)}
 #sw button:hover{transform:scale(1.2)}
 #custom{width:30px;height:30px;padding:2px;margin-left:6px}
-#desk{flex:1;min-height:0;margin:8px 8px 0;background:var(--desk);border-radius:8px;overflow:auto;padding:16px;border:1px solid var(--line)}
-#sheet{display:inline-block;line-height:0;box-shadow:0 2px 10px rgba(0,0,0,.25);touch-action:none}
+#desk{flex:1;min-height:0;margin:8px 8px 0;background:var(--desk);border-radius:8px;overflow:hidden;padding:16px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+#sheet{display:block;flex:none;line-height:0;box-shadow:0 2px 10px rgba(0,0,0,.25);touch-action:none}
 .status{display:flex;gap:18px;padding:6px 14px;color:var(--muted);font-size:12px}
 .status span:first-child{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
@@ -159,8 +159,17 @@ let tool='pen',fg='#000000',bg='#ffffff',target='fg',lw=4,drawing=null,start=nul
 let curId=null,curCreated=0,dirty=false,saveTimer=null,chain=Promise.resolve();
 const hints={select:'オブジェクトをクリックして移動・変形します。',eraser:'ドラッグで消します。図形はクリックで削除。',pen:'ドラッグで自由に描きます。',text:'キャンバスをクリックして文字を入力します。',line:'ドラッグで直線を描きます。',arrow:'ドラッグで矢印を描きます。',rect:'ドラッグで四角形を描きます。',ellipse:'ドラッグで楕円を描きます。'};
 const CW=1152,CH=648;
-function setSize(w,h){canvas.setWidth(w);canvas.setHeight(h);canvas.renderAll();$('size').textContent=w+' × '+h+' px'}
+function fitView(){
+  const d=$('desk');
+  const aw=d.clientWidth-32,ah=d.clientHeight-32;
+  if(aw<=0||ah<=0)return;
+  const k=Math.min(aw/CW,ah/CH);
+  canvas.setDimensions({width:Math.floor(CW*k)+'px',height:Math.floor(CH*k)+'px'},{cssOnly:true});
+  canvas.calcOffset();
+}
+function setSize(w,h){canvas.setWidth(w);canvas.setHeight(h);fitView();canvas.renderAll();$('size').textContent=w+' × '+h+' px'}
 function fit(){setSize(CW,CH)}
+new ResizeObserver(fitView).observe($('desk'));
 
 '000000 7f7f7f 880015 ed1c24 ff7f27 fff200 22b14c 00a2e8 3f48cc a349a4 ffffff c3c3c3 b97a57 ffaec9 ffc90e efe4b0 b5e61d 99d9ea 7092be c8bfe7'.split(' ').forEach(h=>{
   const b=document.createElement('button');b.style.background='#'+h;b.title='#'+h;
