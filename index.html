@@ -29,9 +29,10 @@ body{background:var(--bg);color:var(--ink);font:13px "Segoe UI Variable","Segoe 
 .top{display:flex;align-items:center;gap:4px;padding:6px 10px}
 .top b{font-weight:600;margin-right:10px}
 .top button{border:0;background:none;color:inherit;font:inherit;padding:5px 10px;border-radius:4px;cursor:pointer}
+.top button{white-space:nowrap;flex:none}
 .top button:hover,.ib:hover{background:var(--hover)}
-#title{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:4px;height:28px;padding:0 8px;width:200px;max-width:40vw;user-select:text;-webkit-user-select:text}
-.ribbon{display:flex;gap:0;overflow-x:auto;margin:0 8px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 4px 4px;flex:none;scrollbar-width:thin}
+#title{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:4px;height:28px;padding:0 8px;flex:1;width:auto;min-width:60px;max-width:200px;user-select:text;-webkit-user-select:text}
+.ribbon{display:flex;gap:0;position:relative;margin:0 8px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 4px 4px;flex:none}
 .g{display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:0 10px;border-right:1px solid var(--line);flex:none;gap:4px}
 .g:last-child{border:0}
 .g .row{display:flex;gap:2px;align-items:center;flex:1}
@@ -51,6 +52,21 @@ input[type=range]{width:96px;accent-color:var(--accent)}
 #sw button{width:18px;height:18px;padding:0;border-radius:50%;border:1px solid rgba(128,128,128,.5)}
 #sw button:hover{transform:scale(1.2)}
 #custom{width:30px;height:30px;padding:2px;margin-left:6px}
+@media (max-width:480px){.top{gap:2px;padding:6px}.top b{margin-right:4px}.top button{padding:5px 6px}.top button i{margin-right:2px}}
+#palBtn{display:none}
+.ribbon.c1 .g{padding:0 6px}
+.ribbon.c1 .g small{display:none}
+.ribbon.c1 .ib{width:30px;height:30px}
+.ribbon.c1 .ib.on::after{left:7px;right:7px}
+.ribbon.c1 input[type=range]{width:64px}
+.ribbon.c1 select{max-width:80px}
+.ribbon.c1 #lwv{width:30px}
+.ribbon.c1 #cur{margin-right:2px}
+.ribbon.c2 #palBtn{display:grid}
+.ribbon.c2 #sw{display:none;position:absolute;left:4px;top:calc(100% + 4px);z-index:30;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.ribbon.c2.pal-open #sw{display:grid}
+.ribbon.c3{flex-wrap:wrap;row-gap:4px}
+.ribbon.c3 .g{padding:2px 6px}
 #desk{flex:1;min-width:0;min-height:0;margin:0;background:var(--desk);border-radius:8px;overflow:hidden;padding:16px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
 #work{flex:1;min-height:0;display:flex;gap:8px;margin:8px 8px 0}
 #lpanel{width:260px;flex:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;min-height:0}
@@ -171,7 +187,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
   <div class="g"><div class="row"><input type="range" id="lw" min="1" max="40" value="4" aria-label="サイズ"><span id="lwv">4px</span></div><small>サイズ</small></div>
   <div class="g"><div class="row">
     <div id="cur"><div id="bgb" style="background:#fff"></div><div id="fgb" class="t" style="background:#000"></div></div>
-    <div id="sw"></div><input type="color" id="custom" value="#0067c0" title="色の編集"></div><small>色</small></div>
+    <div id="sw"></div><button class="ib" id="palBtn" title="パレット" aria-label="パレット" aria-expanded="false" data-ic="down"></button><input type="color" id="custom" value="#0067c0" title="色の編集"></div><small>色</small></div>
   <div class="g"><div class="row"><button class="ib" id="lbtn" title="レイヤー" aria-label="レイヤー" aria-expanded="false" data-ic="layers"></button></div><small>レイヤー</small></div>
 </div>
 <div id="work">
@@ -280,6 +296,21 @@ COLORS.forEach(h=>{
 function setCol(c,t){t=t||target;if(t==='fg')fg=c;else bg=c;$(t==='fg'?'fgb':'bgb').style.background=c;applyBrush()}
 function pick(t){target=t;$('fgb').classList.toggle('t',t==='fg');$('bgb').classList.toggle('t',t==='bg')}
 $('fgb').onclick=()=>pick('fg');$('bgb').onclick=()=>pick('bg');
+const ribbonEl=document.querySelector('.ribbon');
+function closePal(){ribbonEl.classList.remove('pal-open');$('palBtn').setAttribute('aria-expanded','false')}
+$('palBtn').onclick=e=>{e.stopPropagation();const o=ribbonEl.classList.toggle('pal-open');$('palBtn').setAttribute('aria-expanded',String(o))};
+document.addEventListener('click',e=>{if(!e.target.closest('#sw')||e.target.closest('#sw button'))closePal()});
+function fitRibbon(){
+  if($('editor').hidden)return;
+  ribbonEl.classList.remove('c1','c2','c3');
+  closePal();
+  for(const c of ['c1','c2','c3']){
+    if(ribbonEl.scrollWidth<=ribbonEl.clientWidth+1)break;
+    ribbonEl.classList.add(c);
+  }
+}
+addEventListener('resize',fitRibbon);
+addEventListener('orientationchange',fitRibbon);
 $('custom').oninput=e=>setCol(e.target.value);
 $('lw').oninput=e=>{lw=+e.target.value;$('lwv').textContent=lw+'px';applyBrush()};
 
@@ -631,7 +662,7 @@ function resetTools(){
   $('fgb').style.background=fg;$('bgb').style.background=bg;pick('fg');
   $('custom').value='#0067c0';$('fillm').value='outline';
 }
-function showEditor(){resetTools();setPanel(false);$('home').hidden=true;$('editor').hidden=false;document.title='ペイント - '+($('title').value||'無題')}
+function showEditor(){resetTools();setPanel(false);$('home').hidden=true;$('editor').hidden=false;fitRibbon();document.title='ペイント - '+($('title').value||'無題')}
 function resetHist(){hist=[snapshot()];redoS=[]}
 function newDrawing(){
   curId=uid();curCreated=Date.now();dirty=false;
