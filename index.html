@@ -30,6 +30,8 @@ body{background:var(--bg);color:var(--ink);font:13px "Segoe UI Variable","Segoe 
 .top b{font-weight:600;margin-right:10px}
 .top button{border:0;background:none;color:inherit;font:inherit;padding:5px 10px;border-radius:4px;cursor:pointer}
 .top button{white-space:nowrap;flex:none}
+.top #tbToggle{margin-left:auto;padding:0}
+.top #tbToggle i{margin:0}
 .top button:hover,.ib:hover{background:var(--hover)}
 #title{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:4px;height:28px;padding:0 8px;flex:1;width:auto;min-width:60px;max-width:200px;user-select:text;-webkit-user-select:text}
 .ribbon{display:flex;gap:0;position:relative;margin:0 8px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 4px 4px;flex:none}
@@ -166,7 +168,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 </div>
 
 <div id="editor" hidden>
-<div class="top"><button id="home_btn"><i class="ti ti-arrow-left" aria-hidden="true"></i>ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save">画像として保存</button><button id="share">共有</button></div>
+<div class="top"><button id="home_btn"><i class="ti ti-arrow-left" aria-hidden="true"></i>ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save">画像として保存</button><button id="share">共有</button><button class="ib" id="tbToggle" title="ツールバーを隠す" aria-label="ツールバーを隠す" aria-expanded="true" data-ic="up"></button></div>
 <div class="ribbon">
   <div class="g"><div class="row">
     <button class="ib" id="undo" title="元に戻す" data-ic="undo"></button>
@@ -315,6 +317,21 @@ function fitRibbon(){
     ribbonEl.classList.add(c);
   }
 }
+function setToolbar(show){
+  ribbonEl.hidden=!show;
+  const b=$('tbToggle');
+  b.innerHTML=ic(show?'up':'down');
+  b.title=b.ariaLabel=show?'ツールバーを隠す':'ツールバーを表示';
+  b.setAttribute('aria-label',b.title);
+  b.setAttribute('aria-expanded',String(show));
+  closePal();
+  if(show)fitRibbon();
+  try{localStorage.setItem('toolbarHidden',show?'0':'1')}catch(e){}
+}
+$('tbToggle').onclick=()=>setToolbar(ribbonEl.hidden);
+let tbHidden=false;
+try{tbHidden=localStorage.getItem('toolbarHidden')==='1'}catch(e){}
+if(tbHidden)setToolbar(false);
 addEventListener('resize',fitRibbon);
 addEventListener('orientationchange',fitRibbon);
 $('custom').oninput=e=>setCol(e.target.value);
