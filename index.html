@@ -298,7 +298,13 @@ function pick(t){target=t;$('fgb').classList.toggle('t',t==='fg');$('bgb').class
 $('fgb').onclick=()=>pick('fg');$('bgb').onclick=()=>pick('bg');
 const ribbonEl=document.querySelector('.ribbon');
 function closePal(){ribbonEl.classList.remove('pal-open');$('palBtn').setAttribute('aria-expanded','false')}
-$('palBtn').onclick=e=>{e.stopPropagation();const o=ribbonEl.classList.toggle('pal-open');$('palBtn').setAttribute('aria-expanded',String(o))};
+function placePal(){
+  const rr=ribbonEl.getBoundingClientRect(),br=$('palBtn').getBoundingClientRect(),sw=$('sw');
+  const left=br.left+br.width/2-rr.left-sw.offsetWidth/2;
+  sw.style.left=Math.max(4,Math.min(left,rr.width-sw.offsetWidth-4))+'px';
+  sw.style.top=(br.bottom-rr.top+4)+'px';
+}
+$('palBtn').onclick=e=>{e.stopPropagation();const o=ribbonEl.classList.toggle('pal-open');$('palBtn').setAttribute('aria-expanded',String(o));if(o)placePal()};
 document.addEventListener('click',e=>{if(!e.target.closest('#sw')||e.target.closest('#sw button'))closePal()});
 function fitRibbon(){
   if($('editor').hidden)return;
@@ -377,16 +383,22 @@ document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>setTool(b.dataset
 canvas.on('before:path:created',e=>{if(tool==='eraser')e.path.set({stroke:'#000',globalCompositeOperation:'destination-out'})});
 canvas.on('path:created',e=>e.path.set({selectable:false,evented:false}));
 
+let textAt=null;
+canvas.on('mouse:up',()=>{
+  if(!textAt)return;
+  const p=textAt;textAt=null;
+  if(tool!=='text')return;
+  const t=new fabric.IText('テキスト',{left:p.x,top:p.y,fill:fg,fontSize:16+lw*2,fontFamily:'"Segoe UI","Noto Sans JP",sans-serif'});
+  canvas.add(t);setTool('select');canvas.setActiveObject(t);t.enterEditing();t.selectAll();
+  if(t.hiddenTextarea)t.hiddenTextarea.focus();
+});
 const shapes=['rect','ellipse','line','arrow'];
 const fillOf=()=>{const m=$('fillm').value;return m==='outline'?'transparent':m==='both'?bg:fg};
 canvas.on('mouse:down',o=>{
   const p=canvas.getPointer(o.e);
   if(tool==='eraser'&&o.target&&o.target.type!=='path'&&o.target.layer===activeLayer){canvas.remove(o.target);return}
   if((tool==='text'||tool==='pen'||tool==='eraser'||shapes.includes(tool))&&blocked())return;
-  if(tool==='text'){
-    const t=new fabric.IText('テキスト',{left:p.x,top:p.y,fill:fg,fontSize:16+lw*2,fontFamily:'"Segoe UI","Noto Sans JP",sans-serif'});
-    canvas.add(t);setTool('select');canvas.setActiveObject(t);t.enterEditing();t.selectAll();return;
-  }
+  if(tool==='text'){textAt=p;return}
   if(!shapes.includes(tool))return;
   start=p;
   const base={left:p.x,top:p.y,stroke:fg,strokeWidth:lw,fill:fillOf(),selectable:false,evented:false};
