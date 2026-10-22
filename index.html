@@ -109,7 +109,6 @@ input[type=range]{width:96px;accent-color:var(--accent)}
 .lr.drag{opacity:.5}
 .lr.drop-top{box-shadow:0 -2px 0 var(--accent)}
 .lr.drop-bot{box-shadow:0 2px 0 var(--accent)}
-@media (max-width:720px){#work{flex-direction:column}#lpanel{width:auto;height:240px}}
 #sheet{display:block;flex:none;margin:auto;line-height:0;background:conic-gradient(#d9d9d9 25%,#fff 0 50%,#d9d9d9 0 75%,#fff 0) 0 0/16px 16px;box-shadow:0 2px 10px rgba(0,0,0,.25);touch-action:none}
 .status{display:flex;align-items:center;gap:12px;height:34px;flex:none;overflow:hidden;white-space:nowrap;padding:0 14px;color:var(--muted);font-size:12px}
 .status>*{flex:none}
@@ -158,38 +157,30 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#323232;color:#fff;padding:9px 16px;border-radius:6px;z-index:60;max-width:90vw}
 .card.new .th{background:var(--desk);color:var(--accent)}
 .empty{color:var(--muted);padding:24px 0}
-#mdock,#msheet,.mtop{display:none}
+.ribbon{display:none!important}
 .msw{width:18px;height:18px;border-radius:50%;border:1px solid var(--muted);display:inline-block;flex:none}
-@media (max-width:720px),(pointer:coarse) and (max-height:500px){
-.ribbon,.status{display:none!important}
-.top{padding:4px 6px;gap:4px}
-.top #save,.top #share,.top #tbToggle{display:none}
-.top #home_btn{font-size:0;padding:0;width:40px;height:40px;display:grid;place-items:center}
-.top #home_btn i{font-size:22px;margin:0}
-#title{max-width:none;height:36px;font-size:15px}
-.top .mtop{display:grid;width:40px;height:40px;padding:0}
-.top .mtop i{font-size:22px;margin:0}
+.top{height:48px;flex:none;padding:0 10px}
+.top #tbToggle{display:none}
+.top .ib{padding:0;width:34px;height:34px}
+.top .ib i{margin:0;font-size:20px}
+#home_btn{order:0}#title{order:1}#mundo{order:2}#mredo{order:3}#mimg{order:4}#mdel{order:5}#save{order:6;margin-left:auto}#share{order:7}#mmore{order:8;display:none}
 #editor{position:relative}
-#work{margin:0 4px}
-#desk{padding:6px}
-#lpanel{position:absolute;left:0;right:0;bottom:58px;width:auto;height:auto;max-height:50vh;z-index:40;border-radius:14px 14px 0 0;border-bottom:0;box-shadow:0 -6px 24px rgba(0,0,0,.25)}
-#llist{max-height:30vh}
-.lr{min-height:44px}
-.lr .ib{width:40px;height:40px}
-.grip{width:24px;height:40px}
-#mdock{display:flex;flex:none;height:58px;margin-top:4px;background:var(--panel);border-top:1px solid var(--line);touch-action:manipulation}
-#mdock button{flex:1;min-width:0;border:0;background:none;color:var(--ink);font:inherit;font-size:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;position:relative;cursor:pointer}
-#mdock button i{font-size:24px;line-height:1;margin:0}
+#mdock{display:flex;flex-direction:column;flex:none;width:64px;gap:2px;padding:6px 4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:auto}
+#mdock button{flex:none;height:56px;border:0;border-radius:8px;background:none;color:var(--ink);font:inherit;font-size:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;position:relative;cursor:pointer}
+#mdock button:hover{background:var(--hover)}
+#mdock button i{font-size:22px;line-height:1;margin:0}
 #mdock button span:not(#mcol){max-width:100%;padding:0 2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--muted)}
+#mdock button.on{background:var(--sel)}
 #mdock button.on,#mdock button.on span{color:var(--accent)!important}
-#mdock button.on::after{content:"";position:absolute;top:0;left:28%;right:28%;height:3px;border-radius:0 0 3px 3px;background:var(--accent)}
+#mdock button.on::after{content:"";position:absolute;left:0;top:30%;bottom:30%;width:3px;border-radius:0 3px 3px 0;background:var(--accent)}
 #mcol{display:block;width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);background:#000}
-#msheet{position:absolute;left:0;right:0;bottom:58px;z-index:45;display:block;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.25);max-height:55vh;overflow:auto;padding:8px 12px 14px;touch-action:manipulation}
+#msheet{position:absolute;left:80px;top:56px;width:340px;max-height:calc(100% - 112px);z-index:45;display:block;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.3);overflow:auto;padding:8px 12px 14px}
 .mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .mh b{font-weight:600;font-size:14px}
 .mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .mgrid.g4{grid-template-columns:repeat(4,1fr)}
 .mbtn{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;font:inherit;font-size:12px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;min-height:56px}
+.mbtn:hover{background:var(--hover)}
 .mbtn.on{background:var(--sel);border-color:var(--accent)}
 .mbtn svg{width:64px;height:24px;display:block}
 .mbtn i{font-size:22px;line-height:1}
@@ -197,13 +188,43 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .mseg .mbtn{flex:1;min-height:44px;flex-direction:row;gap:8px}
 #mpal{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-top:12px}
 #mpal button{aspect-ratio:1;min-width:0;border-radius:50%;border:1px solid rgba(128,128,128,.5);padding:0;cursor:pointer}
+#mpal button:hover{transform:scale(1.15)}
 .mrowx{display:flex;align-items:center;gap:10px;margin-top:12px}
 .mrowx label{color:var(--muted);width:56px;flex:none}
 .mrowx input[type=range]{flex:1;width:auto}
 .mrowx input[type=color]{width:56px;height:36px;padding:2px}
 .mlist{display:flex;flex-direction:column;gap:6px}
 .mlist .mbtn{flex-direction:row;justify-content:flex-start;padding:10px 12px;gap:10px;font-size:14px;min-height:46px}
+@media (max-width:900px){#lpanel{width:220px}}
+@media (max-height:640px){#mdock{gap:0}#mdock button{height:46px}#mdock button i{font-size:20px}#mcol{width:20px;height:20px}#msheet{top:52px}}
+@media (max-width:720px),(pointer:coarse) and (max-height:500px){
+.status{display:none!important}
+.top{padding:0 6px;gap:4px}
+.top #save,.top #share,.top .dtop{display:none}
+.top #mmore{display:grid}
+.top .ib{width:40px;height:40px}
+.top .ib i{font-size:22px}
+.top #home_btn{font-size:0;padding:0;width:40px;height:40px;display:grid;place-items:center}
+.top #home_btn i{font-size:22px;margin:0}
+#title{max-width:none;height:36px;font-size:15px}
+#work{display:contents}
+#desk{margin:0 4px;padding:6px;order:1}
+#lpanel{position:absolute;left:0;right:0;bottom:58px;width:auto;height:auto;max-height:50vh;z-index:40;border-radius:14px 14px 0 0;border-bottom:0;box-shadow:0 -6px 24px rgba(0,0,0,.25)}
+#llist{max-height:30vh}
+.lr{min-height:44px}
+.lr .ib{width:40px;height:40px}
+.grip{width:24px;height:40px}
+#mdock{order:2;flex-direction:row;width:auto;height:58px;margin-top:4px;gap:0;padding:0;border:0;border-top:1px solid var(--line);border-radius:0;touch-action:manipulation}
+#mdock button{flex:1;height:auto;min-width:0;border-radius:0}
+#mdock button:hover{background:none}
+#mdock button.on{background:none}
+#mdock button.on::after{left:28%;right:28%;top:0;bottom:auto;width:auto;height:3px;border-radius:0 0 3px 3px}
+#msheet{left:0;right:0;top:auto;bottom:58px;width:auto;max-height:55vh;border-radius:14px 14px 0 0;border-bottom:0;box-shadow:0 -6px 24px rgba(0,0,0,.25);touch-action:manipulation}
 }
+.mfonts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.mfont{min-height:52px;gap:2px;padding:6px 4px}
+.mfont .s{font-size:18px;line-height:1.3;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.mfont .n{font-size:10px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -221,7 +242,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 </div>
 
 <div id="editor" hidden>
-<div class="top"><button id="home_btn"><i class="ti ti-arrow-left" aria-hidden="true"></i>ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save">画像として保存</button><button id="share">共有</button><button class="ib mtop" id="mundo" title="元に戻す" aria-label="元に戻す" data-ic="undo"></button><button class="ib mtop" id="mredo" title="やり直し" aria-label="やり直し" data-ic="redo"></button><button class="ib mtop" id="mmore" title="その他" aria-label="その他" data-ic="more"></button><button class="ib" id="tbToggle" title="ツールバーを隠す" aria-label="ツールバーを隠す" aria-expanded="true" data-ic="up"></button></div>
+<div class="top"><button id="home_btn"><i class="ti ti-arrow-left" aria-hidden="true"></i>ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save">画像として保存</button><button id="share">共有</button><button class="ib mtop" id="mundo" title="元に戻す" aria-label="元に戻す" data-ic="undo"></button><button class="ib mtop" id="mredo" title="やり直し" aria-label="やり直し" data-ic="redo"></button><button class="ib dtop" id="mimg" title="画像を読み込む" aria-label="画像を読み込む" data-ic="photo"></button><button class="ib dtop" id="mdel" title="選択を削除 (Delete)" aria-label="選択を削除" data-ic="trash"></button><button class="ib mtop" id="mmore" title="その他" aria-label="その他" data-ic="more"></button><button class="ib" id="tbToggle" title="ツールバーを隠す" aria-label="ツールバーを隠す" aria-expanded="true" data-ic="up"></button></div>
 <div class="ribbon">
   <div class="g"><div class="row">
     <button class="ib" id="undo" title="元に戻す" data-ic="undo"></button>
@@ -247,6 +268,15 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
   <div class="g"><div class="row"><button class="ib" id="lbtn" title="レイヤー" aria-label="レイヤー" aria-expanded="false" data-ic="layers"></button></div><small>レイヤー</small></div>
 </div>
 <div id="work">
+<nav id="mdock" aria-label="ツール">
+<button class="mt" data-mt="select"><i class="ti ti-pointer" aria-hidden="true"></i><span>選択</span></button>
+<button class="mt" data-mt="pen"><i class="ti ti-pencil" aria-hidden="true"></i><span id="mpenl">ペン</span></button>
+<button class="mt" data-mt="eraser"><i class="ti ti-eraser" aria-hidden="true"></i><span>消しゴム</span></button>
+<button class="mt" data-mt="shape"><i id="mshapeI" class="ti ti-rectangle" aria-hidden="true"></i><span id="mshapel">四角形</span></button>
+<button class="mt" data-mt="text"><i class="ti ti-typography" aria-hidden="true"></i><span>文字</span></button>
+<button id="mcolor" data-mt="color"><span id="mcol"></span><span>色</span></button>
+<button id="mlayers" data-mt="layers"><i class="ti ti-stack-2" aria-hidden="true"></i><span>レイヤー</span></button>
+</nav>
 <div id="desk"><div id="sheet"><canvas id="c"></canvas></div></div>
 <aside id="lpanel" hidden aria-label="レイヤー">
   <div class="lh"><b>レイヤー</b><div class="lbtns">
@@ -265,18 +295,14 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 </aside>
 </div>
 <div class="status"><span id="hint"></span><span id="saved">自動保存: 待機中</span><span id="pos">0, 0 px</span><span id="size"></span><div class="zoomc"><button class="ib" id="zout" title="縮小" aria-label="縮小" data-ic="zoomout"></button><button id="zpct" title="全体表示" aria-label="全体表示">100%</button><button class="ib" id="zin" title="拡大" aria-label="拡大" data-ic="zoomin"></button></div></div>
-<nav id="mdock" aria-label="ツール">
-<button class="mt" data-mt="select"><i class="ti ti-pointer" aria-hidden="true"></i><span>選択</span></button>
-<button class="mt" data-mt="pen"><i class="ti ti-pencil" aria-hidden="true"></i><span id="mpenl">ペン</span></button>
-<button class="mt" data-mt="eraser"><i class="ti ti-eraser" aria-hidden="true"></i><span>消しゴム</span></button>
-<button class="mt" data-mt="shape"><i id="mshapeI" class="ti ti-rectangle" aria-hidden="true"></i><span id="mshapel">四角形</span></button>
-<button class="mt" data-mt="text"><i class="ti ti-typography" aria-hidden="true"></i><span>文字</span></button>
-<button id="mcolor" data-mt="color"><span id="mcol"></span><span>色</span></button>
-<button id="mlayers" data-mt="layers"><i class="ti ti-stack-2" aria-hidden="true"></i><span>レイヤー</span></button>
-</nav>
 <div id="msheet" hidden>
 <div class="mh"><b id="mtitle"></b><button class="ib sm" id="mclose" title="閉じる" aria-label="閉じる" data-ic="close"></button></div>
 <div data-p="pen" hidden><div class="mgrid" id="mpens"></div></div>
+<div data-p="text" hidden>
+<div class="mfonts" id="mfonts"></div>
+<div class="mseg"><button class="mbtn" id="mbold"><strong style="font-size:16px">B</strong>太字</button><button class="mbtn" id="mitalic"><em style="font-size:16px;font-weight:600">I</em>斜体</button></div>
+<div class="mrowx"><label for="mts">サイズ</label><input type="range" id="mts" min="8" max="200" value="32"><span id="mtsv">32px</span></div>
+</div>
 <div data-p="shape" hidden><div class="mgrid g4" id="mshapes"></div><div class="mseg" id="mfill"></div></div>
 <div data-p="color" hidden>
 <div class="mseg"><button class="mbtn on" id="mfg"><span class="msw" id="mfgsw" style="background:#000"></span>線・文字</button><button class="mbtn" id="mbg"><span class="msw" id="mbgsw" style="background:#fff"></span>塗り</button></div>
@@ -298,7 +324,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 
 <script>
 const $=id=>document.getElementById(id);
-const P={select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out'};
+const P={select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out',dblarrow:'ti ti-arrows-horizontal',roundrect:'ti ti-square-rounded',triangle:'ti ti-triangle',diamond:'ti ti-diamond',pentagon:'ti ti-pentagon',hexagon:'ti ti-hexagon',star:'ti ti-star',heart:'ti ti-heart',bubble:'ti ti-message',cross:'ti ti-plus'};
 const ic=n=>'<i class="'+P[n]+'" aria-hidden="true"></i>';
 document.querySelectorAll('[data-ic]').forEach(b=>{b.innerHTML=ic(b.dataset.ic)});
 
@@ -362,7 +388,7 @@ let penType='pen';
 const hexA=(c,a)=>{const h=c.replace('#','');const n=parseInt(h.length===3?h.replace(/./g,'$&$&'):h,16);return 'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')'};
 let tool='pen',fg='#000000',bg='#ffffff',target='fg',lw=4,drawing=null,start=null,hist=[],redoS=[],busy=false,layers=[],activeLayer=null;
 let curId=null,curCreated=0,dirty=false,saveTimer=null,chain=Promise.resolve();
-const hints={select:'オブジェクトをクリックして移動・変形します。',eraser:'ドラッグで選択中のレイヤーの絵を消します。図形はクリックで削除。',pen:'ドラッグで自由に描きます。ペンの種類を切り替えられます。',text:'キャンバスをクリックして文字を入力します。',line:'ドラッグで直線を描きます。',arrow:'ドラッグで矢印を描きます。',rect:'ドラッグで四角形を描きます。',ellipse:'ドラッグで楕円を描きます。'};
+const hints={select:'オブジェクトをクリックして移動・変形します。',eraser:'ドラッグで選択中のレイヤーの絵を消します。図形はクリックで削除。',pen:'ドラッグで自由に描きます。ペンの種類を切り替えられます。',text:'キャンバスをクリックして文字を入力します。もう一度「文字」を押すとフォントなどを変更できます。',line:'ドラッグで直線を描きます。',arrow:'ドラッグで矢印を描きます。',rect:'ドラッグで四角形を描きます。',ellipse:'ドラッグで楕円を描きます。'};
 const CW=1152,CH=648;
 const ZMIN=0.1,ZMAX=8;
 let zoom=1,viewK=1;
@@ -515,7 +541,7 @@ function load(s){
   const o=JSON.parse(s);
   layers=o.layers.map(l=>({...l}));activeLayer=o.active;
   busy=true;
-  canvas.loadFromJSON(o.c,()=>{canvas.renderAll();renderLayers();setTool(tool);busy=false;scheduleSave()});
+  canvas.loadFromJSON(o.c,()=>{canvas.renderAll();renderLayers();setTool(tool);busy=false;scheduleSave();loadUsedFonts(canvas.getObjects()).then(r=>{if(r)canvas.requestRenderAll()})});
 }
 canvas.on('object:added',e=>{if(!e.target.layer)e.target.layer=drawLayerId();reorder()});
 canvas.on('object:added',snap);canvas.on('object:modified',snap);canvas.on('object:removed',snap);
@@ -577,12 +603,51 @@ canvas.on('mouse:up',()=>{
   if(!textAt)return;
   const p=textAt;textAt=null;
   if(tool!=='text')return;
-  const t=new fabric.IText('テキスト',{left:p.x,top:p.y,fill:fg,fontSize:16+lw*2,fontFamily:'"Segoe UI","Noto Sans JP",sans-serif'});
+  const t=new fabric.IText('テキスト',{left:p.x,top:p.y,fill:fg,fontSize:textSize,fontFamily:textFont,fontWeight:textBold?'bold':'normal',fontStyle:textItalic?'italic':'normal'});
   canvas.add(t);setTool('select');canvas.setActiveObject(t);t.enterEditing();t.selectAll();
   if(t.hiddenTextarea)t.hiddenTextarea.focus();
 });
-const shapes=['rect','ellipse','line','arrow'];
+const shapes=['line','arrow','dblarrow','rect','roundrect','ellipse','triangle','diamond','pentagon','hexagon','star','heart','bubble','cross'];
 const fillOf=()=>{const m=$('fillm').value;return m==='outline'?'transparent':m==='both'?bg:fg};
+const norm=a=>{const xs=a.map(q=>q[0]),ys=a.map(q=>q[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);return a.map(q=>[(q[0]-x0)/(x1-x0),(q[1]-y0)/(y1-y0)])};
+const ngon=n=>norm(Array.from({length:n},(_,i)=>{const a=-Math.PI/2+i*2*Math.PI/n;return[Math.cos(a),Math.sin(a)]}));
+const POLY={
+  triangle:[[.5,0],[1,1],[0,1]],
+  diamond:[[.5,0],[1,.5],[.5,1],[0,.5]],
+  pentagon:ngon(5),
+  hexagon:[[.25,0],[.75,0],[1,.5],[.75,1],[.25,1],[0,.5]],
+  star:norm(Array.from({length:10},(_,i)=>{const r=i%2?.4:1,a=-Math.PI/2+i*Math.PI/5;return[r*Math.cos(a),r*Math.sin(a)]})),
+  cross:[[1/3,0],[2/3,0],[2/3,1/3],[1,1/3],[1,2/3],[2/3,2/3],[2/3,1],[1/3,1],[1/3,2/3],[0,2/3],[0,1/3],[1/3,1/3]]
+};
+const CURVES={
+  heart:[['M',.5,1],['C',.1,.68,0,.42,0,.27],['C',0,.1,.12,0,.27,0],['C',.38,0,.46,.06,.5,.14],['C',.54,.06,.62,0,.73,0],['C',.88,0,1,.1,1,.27],['C',1,.42,.9,.68,.5,1],['Z']],
+  bubble:[['M',.1,0],['L',.9,0],['Q',1,0,1,.1],['L',1,.62],['Q',1,.72,.9,.72],['L',.42,.72],['L',.2,1],['L',.26,.72],['L',.1,.72],['Q',0,.72,0,.62],['L',0,.1],['Q',0,0,.1,0],['Z']]
+};
+function makeShape(t,x0,y0,x1,y1,shift){
+  const isLine=t==='line'||t==='arrow'||t==='dblarrow';
+  if(shift){
+    const dx=x1-x0,dy=y1-y0;
+    if(isLine){const a=Math.round(Math.atan2(dy,dx)/(Math.PI/4))*Math.PI/4,r=Math.hypot(dx,dy);x1=x0+r*Math.cos(a);y1=y0+r*Math.sin(a)}
+    else{const m=Math.max(Math.abs(dx),Math.abs(dy));x1=x0+m*(dx<0?-1:1);y1=y0+m*(dy<0?-1:1)}
+  }
+  const l=Math.min(x0,x1),tp=Math.min(y0,y1),w=Math.abs(x1-x0),h=Math.abs(y1-y0);
+  const base={stroke:fg,strokeWidth:lw,fill:fillOf(),strokeLineJoin:'round',selectable:false,evented:false};
+  if(t==='rect')return new fabric.Rect({...base,left:l,top:tp,width:w,height:h});
+  if(t==='roundrect'){const r=Math.min(w,h)*.2;return new fabric.Rect({...base,left:l,top:tp,width:w,height:h,rx:r,ry:r})}
+  if(t==='ellipse')return new fabric.Ellipse({...base,left:l,top:tp,rx:w/2,ry:h/2});
+  if(isLine){
+    const ln=new fabric.Line([x0,y0,x1,y1],{...base,fill:fg,strokeLineCap:'round'});
+    if(t==='line')return ln;
+    const a=Math.atan2(y1-y0,x1-x0),hs=10+lw*2;
+    const head=(x,y,ang)=>new fabric.Triangle({left:x,top:y,originX:'center',originY:'center',width:hs,height:hs,fill:fg,angle:ang});
+    const parts=[ln,head(x1,y1,a*180/Math.PI+90)];
+    if(t==='dblarrow')parts.push(head(x0,y0,a*180/Math.PI-90));
+    return new fabric.Group(parts,{selectable:false,evented:false});
+  }
+  if(POLY[t])return new fabric.Polygon(POLY[t].map(q=>({x:l+q[0]*w,y:tp+q[1]*h})),base);
+  const d=CURVES[t].map(c=>c.map((v,k)=>k===0?v:(k%2===1?l+v*w:tp+v*h)).join(' ')).join(' ');
+  return new fabric.Path(d,base);
+}
 canvas.on('mouse:down',o=>{
   const p=canvas.getPointer(o.e);
   if(tool==='eraser'&&o.target&&o.target.type!=='path'&&o.target.layer===activeLayer){canvas.remove(o.target);return}
@@ -590,41 +655,38 @@ canvas.on('mouse:down',o=>{
   if(tool==='text'){textAt=p;return}
   if(!shapes.includes(tool))return;
   start=p;
-  const base={left:p.x,top:p.y,stroke:fg,strokeWidth:lw,fill:fillOf(),selectable:false,evented:false};
-  if(tool==='rect')drawing=new fabric.Rect({...base,width:0,height:0});
-  else if(tool==='ellipse')drawing=new fabric.Ellipse({...base,rx:0,ry:0});
-  else drawing=new fabric.Line([p.x,p.y,p.x,p.y],{...base,fill:fg,strokeLineCap:'round'});
+  drawing=makeShape(tool,p.x,p.y,p.x,p.y,false);
   busy=true;canvas.add(drawing);busy=false;
 });
 canvas.on('mouse:move',o=>{
   const p=canvas.getPointer(o.e);$('pos').textContent=Math.round(p.x)+', '+Math.round(p.y)+' px';
   if(!drawing)return;
-  if(tool==='rect')drawing.set({left:Math.min(start.x,p.x),top:Math.min(start.y,p.y),width:Math.abs(p.x-start.x),height:Math.abs(p.y-start.y)});
-  else if(tool==='ellipse')drawing.set({left:Math.min(start.x,p.x),top:Math.min(start.y,p.y),rx:Math.abs(p.x-start.x)/2,ry:Math.abs(p.y-start.y)/2});
-  else drawing.set({x2:p.x,y2:p.y});
+  busy=true;canvas.remove(drawing);
+  drawing=makeShape(tool,start.x,start.y,p.x,p.y,o.e.shiftKey);
+  canvas.add(drawing);busy=false;
   canvas.renderAll();
 });
 canvas.on('mouse:up',o=>{
   if(!drawing)return;
-  const p=canvas.getPointer(o.e);let obj=drawing;drawing=null;
-  busy=true;canvas.remove(obj);
+  const p=canvas.getPointer(o.e);
+  busy=true;canvas.remove(drawing);drawing=null;
   const tiny=Math.hypot(p.x-start.x,p.y-start.y)<3;
-  if(!tiny){
-    if(tool==='arrow'){
-      const a=Math.atan2(p.y-start.y,p.x-start.x),h=10+lw*2;
-      const head=new fabric.Triangle({left:p.x,top:p.y,originX:'center',originY:'center',width:h,height:h,fill:fg,angle:a*180/Math.PI+90});
-      obj=new fabric.Group([obj,head]);
-    }
-    obj.set({selectable:false,evented:false});canvas.add(obj);
-  }
+  if(!tiny)canvas.add(makeShape(tool,start.x,start.y,p.x,p.y,o.e.shiftKey));
   busy=false;if(!tiny)snap();canvas.renderAll();
 });
 addEventListener('keydown',e=>{
   if($('editor').hidden||$('modal'))return;
   const ae=document.activeElement;if(ae&&(ae.tagName==='INPUT'||ae.tagName==='SELECT'))return;
   const ao=canvas.getActiveObject();if(ao&&ao.isEditing)return;
+  const k=e.key.toLowerCase(),mod=e.ctrlKey||e.metaKey;
   if(e.key==='Delete')$('del').click();
-  if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();(e.shiftKey?$('redo'):$('undo')).click()}
+  else if(mod&&k==='z'){e.preventDefault();(e.shiftKey?$('redo'):$('undo')).click()}
+  else if(mod&&k==='y'){e.preventDefault();$('redo').click()}
+  else if(!mod&&!e.altKey){
+    if(KEYS[k]){closeSheet();setTool(KEYS[k])}
+    else if(k==='[')setLw(Math.max(1,lw-1));
+    else if(k===']')setLw(Math.min(40,lw+1));
+  }
 });
 
 function defaultLayers(color){
@@ -889,6 +951,7 @@ async function openDrawing(id){
   canvas.loadFromJSON(d.c,()=>{
     setSize(CW,CH);
     busy=false;renderLayers();resetHist();setTool('pen');
+    loadUsedFonts(canvas.getObjects()).then(r=>{if(r)canvas.requestRenderAll()});
   });
 }
 async function goHome(){
@@ -914,6 +977,7 @@ async function renderPng(id){
   const sc=new fabric.StaticCanvas(el,{width:CW,height:CH});
   sc._renderObjects=makeLayeredRender(()=>d.layers||[]);
   await new Promise(res=>sc.loadFromJSON(d.c,res));
+  await loadUsedFonts(sc.getObjects());
   sc.renderAll();
   const url=sc.toDataURL({format:'png',multiplier:2});
   sc.dispose();
@@ -1091,9 +1155,10 @@ $('homeImg').onclick=()=>chooseImage('new');
 $('imgBtn').onclick=()=>chooseImage('add');
 
 const PEN_NAMES={pen:'ペン',pencil:'鉛筆',fine:'細ペン',marker:'マーカー',highlighter:'蛍光ペン',dashed:'点線',neon:'ネオン',spray:'スプレー',dots:'点描'};
-const SHAPE_NAMES={line:'直線',arrow:'矢印',rect:'四角形',ellipse:'楕円'};
+const SHAPE_NAMES={line:'直線',arrow:'矢印',dblarrow:'双方向矢印',rect:'四角形',roundrect:'角丸四角形',ellipse:'楕円',triangle:'三角形',diamond:'ひし形',pentagon:'五角形',hexagon:'六角形',star:'星',heart:'ハート',bubble:'吹き出し',cross:'十字'};
+Object.keys(SHAPE_NAMES).forEach(k=>{if(!hints[k])hints[k]='ドラッグで'+SHAPE_NAMES[k]+'を描きます。Shiftキーで縦横比を固定します。'});
 const FILL_NAMES=[['outline','輪郭'],['both','輪郭+塗り'],['fill','塗りのみ']];
-const SHEET_TITLES={pen:'ペンの種類',shape:'図形',color:'色とサイズ',more:'その他'};
+const SHEET_TITLES={pen:'ペンの種類',text:'文字',shape:'図形',color:'色とサイズ',more:'その他'};
 let lastShape='rect',sheet=null;
 function penSvg(k){
   const t=PENS[k];
@@ -1136,6 +1201,7 @@ function toggleSheet(name){
   setPanel(false);
   $('mtitle').textContent=SHEET_TITLES[name];
   document.querySelectorAll('#msheet [data-p]').forEach(p=>p.hidden=p.dataset.p!==name);
+  if(name==='text')syncTextFromSelection();
   $('msheet').hidden=false;
   updateMobile();
 }
@@ -1167,6 +1233,7 @@ $('mcustom').oninput=e=>setCol(e.target.value);
 document.querySelectorAll('#mdock [data-mt]').forEach(b=>b.onclick=()=>{
   const k=b.dataset.mt;
   if(k==='pen'){if(tool==='pen')toggleSheet('pen');else{closeSheet();setTool('pen')}}
+  else if(k==='text'){if(tool==='text'||(tool==='select'&&activeText()))toggleSheet('text');else{closeSheet();setTool('text');toggleSheet('text')}}
   else if(k==='shape')toggleSheet('shape');
   else if(k==='color')toggleSheet('color');
   else if(k==='layers')setPanel($('lpanel').hidden);
@@ -1182,6 +1249,87 @@ $('mzout').onclick=()=>$('zout').click();
 $('mzin').onclick=()=>$('zin').click();
 $('mzpct').onclick=()=>$('zpct').click();
 $('desk').addEventListener('pointerdown',closeSheet,true);
+const FONTS=[
+  {n:'ゴシック',css:'"Segoe UI","Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif'},
+  {n:'明朝',css:'"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho",serif',g:'Noto+Serif+JP:wght@400;700',fam:'Noto Serif JP'},
+  {n:'丸ゴシック',css:'"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif',g:'Zen+Maru+Gothic:wght@400;700',fam:'Zen Maru Gothic'},
+  {n:'教科書体風',css:'"Klee One","Yu Kyokasho",serif',g:'Klee+One:wght@400;600',fam:'Klee One'},
+  {n:'マジック',css:'"Yusei Magic",cursive',g:'Yusei+Magic',fam:'Yusei Magic'},
+  {n:'ポップ',css:'"Hachi Maru Pop",cursive',g:'Hachi+Maru+Pop',fam:'Hachi Maru Pop'},
+  {n:'極太',css:'"Dela Gothic One",sans-serif',g:'Dela+Gothic+One',fam:'Dela Gothic One'},
+  {n:'筆文字',css:'"Potta One",serif',g:'Potta+One',fam:'Potta One'},
+  {n:'ロック',css:'"RocknRoll One",sans-serif',g:'RocknRoll+One',fam:'RocknRoll One'},
+  {n:'等幅',css:'ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace'},
+  {n:'欧文セリフ',css:'Georgia,"Times New Roman",serif'}
+];
+let textSize=32,textFont=FONTS[0].css,textBold=false,textItalic=false;
+FONTS.filter(f=>f.g).forEach(f=>{
+  const l=document.createElement('link');l.rel='stylesheet';
+  l.href='https://fonts.googleapis.com/css2?family='+f.g+'&display=swap';
+  document.head.appendChild(l);
+});
+function ensureFont(f,bold){
+  if(!f||!f.g||!document.fonts)return Promise.resolve();
+  const sample='あア漢Aa1';
+  return Promise.all([document.fonts.load('32px "'+f.fam+'"',sample),bold?document.fonts.load('bold 32px "'+f.fam+'"',sample):null]).catch(()=>{});
+}
+function loadUsedFonts(list){
+  const used=new Set(list.map(o=>o.fontFamily).filter(Boolean));
+  const fs=FONTS.filter(f=>f.g&&used.has(f.css));
+  if(!fs.length||!document.fonts)return Promise.resolve(false);
+  return Promise.all(fs.map(f=>ensureFont(f,true))).then(()=>{
+    list.forEach(o=>{if(o.fontFamily&&o.initDimensions){o.initDimensions();o.dirty=true;o.setCoords()}});
+    return true;
+  });
+}
+function activeText(){
+  const o=canvas.getActiveObject();
+  return o&&(o.type==='i-text'||o.type==='textbox'||o.type==='text')?o:null;
+}
+function applyText(props,noSnap){
+  const o=activeText();
+  if(!o)return;
+  o.set(props);
+  o.initDimensions();o.setCoords();
+  canvas.requestRenderAll();
+  if(!noSnap)snap();
+}
+function renderTextSheet(){
+  document.querySelectorAll('#mfonts [data-f]').forEach(b=>b.classList.toggle('on',b.dataset.f===textFont));
+  $('mbold').classList.toggle('on',textBold);
+  $('mitalic').classList.toggle('on',textItalic);
+  $('mts').value=textSize;$('mtsv').textContent=Math.round(textSize)+'px';
+}
+function syncTextFromSelection(){
+  const o=activeText();
+  if(o){
+    textFont=o.fontFamily;textBold=o.fontWeight==='bold'||+o.fontWeight>=600;textItalic=o.fontStyle==='italic';
+    textSize=Math.max(8,Math.min(200,Math.round(o.fontSize)));
+  }
+  renderTextSheet();
+}
+function chooseFont(f){
+  textFont=f.css;renderTextSheet();
+  ensureFont(f,textBold).then(()=>applyText({fontFamily:f.css}));
+}
+FONTS.forEach(f=>{
+  const b=document.createElement('button');b.className='mbtn mfont';b.dataset.f=f.css;
+  b.innerHTML='<span class="s">あア漢 Abc</span><span class="n">'+f.n+'</span>';
+  b.firstChild.style.fontFamily=f.css;
+  b.onclick=()=>chooseFont(f);
+  $('mfonts').appendChild(b);
+});
+$('mbold').onclick=()=>{textBold=!textBold;renderTextSheet();const f=FONTS.find(x=>x.css===textFont);ensureFont(f,textBold).then(()=>applyText({fontWeight:textBold?'bold':'normal'}))};
+$('mitalic').onclick=()=>{textItalic=!textItalic;renderTextSheet();applyText({fontStyle:textItalic?'italic':'normal'})};
+$('mts').oninput=e=>{textSize=+e.target.value;$('mtsv').textContent=textSize+'px';applyText({fontSize:textSize},true)};
+$('mts').onchange=()=>{if(activeText())snap()};
+
+const KEYS={v:'select',p:'pen',e:'eraser',t:'text',l:'line',a:'arrow',r:'rect',o:'ellipse'};
+const DOCK_TITLES={select:'選択 (V)',pen:'ペン (P)',eraser:'消しゴム (E)',shape:'図形 (L / A / R / O)',text:'文字 (T)',color:'色とサイズ ([ ] でサイズ変更)',layers:'レイヤー'};
+document.querySelectorAll('#mdock [data-mt]').forEach(b=>b.title=DOCK_TITLES[b.dataset.mt]);
+$('mimg').onclick=()=>$('imgBtn').click();
+$('mdel').onclick=()=>$('del').click();
+addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 updateMobile();syncMobileColor();
 renderHome();
 </script>
