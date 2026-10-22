@@ -183,6 +183,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
     <button class="ib on" data-t="pen" title="ペン" data-ic="pen"></button>
     <button class="ib" data-t="eraser" title="消しゴム" data-ic="eraser"></button>
     <button class="ib" data-t="text" title="テキスト" data-ic="text"></button></div><small>ツール</small></div>
+  <div class="g"><div class="row"><select id="pent" aria-label="ペンの種類"><option value="pen">ペン</option><option value="pencil">鉛筆</option><option value="fine">細ペン</option><option value="marker">マーカー</option><option value="highlighter">蛍光ペン</option><option value="dashed">点線</option><option value="neon">ネオン</option><option value="spray">スプレー</option><option value="dots">点描</option></select></div><small>ペンの種類</small></div>
   <div class="g"><div class="row" id="shapes">
     <button class="ib" data-t="line" title="直線" data-ic="line"></button>
     <button class="ib" data-t="arrow" title="矢印" data-ic="arrow"></button>
@@ -278,9 +279,12 @@ function makeLayeredRender(getLayers){
 }
 const canvas=new fabric.Canvas('c',{backgroundColor:'#fff',selection:true,preserveObjectStacking:true});
 canvas._renderObjects=makeLayeredRender(()=>layers);
+const PENS={pen:{k:1,a:1},pencil:{k:.7,a:.75},fine:{k:.4,a:1},marker:{k:2.5,a:.6,cap:'square'},highlighter:{k:6,a:.3,cap:'square'},dashed:{k:1,a:1,cap:'butt',dash:true},neon:{k:1,a:1,glow:3},spray:{k:3,a:1,spray:true},dots:{k:3,a:1,dots:true}};
+let penType='pen';
+const hexA=(c,a)=>{const h=c.replace('#','');const n=parseInt(h.length===3?h.replace(/./g,'$&$&'):h,16);return 'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')'};
 let tool='pen',fg='#000000',bg='#ffffff',target='fg',lw=4,drawing=null,start=null,hist=[],redoS=[],busy=false,layers=[],activeLayer=null;
 let curId=null,curCreated=0,dirty=false,saveTimer=null,chain=Promise.resolve();
-const hints={select:'オブジェクトをクリックして移動・変形します。',eraser:'ドラッグで選択中のレイヤーの絵を消します。図形はクリックで削除。',pen:'ドラッグで自由に描きます。',text:'キャンバスをクリックして文字を入力します。',line:'ドラッグで直線を描きます。',arrow:'ドラッグで矢印を描きます。',rect:'ドラッグで四角形を描きます。',ellipse:'ドラッグで楕円を描きます。'};
+const hints={select:'オブジェクトをクリックして移動・変形します。',eraser:'ドラッグで選択中のレイヤーの絵を消します。図形はクリックで削除。',pen:'ドラッグで自由に描きます。ペンの種類を切り替えられます。',text:'キャンバスをクリックして文字を入力します。',line:'ドラッグで直線を描きます。',arrow:'ドラッグで矢印を描きます。',rect:'ドラッグで四角形を描きます。',ellipse:'ドラッグで楕円を描きます。'};
 const CW=1152,CH=648;
 const ZMIN=0.1,ZMAX=8;
 let zoom=1,viewK=1;
@@ -450,7 +454,26 @@ function shareCurrent(){
 $('share').onclick=shareCurrent;
 $('save').onclick=()=>{canvas.discardActiveObject();canvas.renderAll();const a=document.createElement('a');a.href=canvas.toDataURL({format:'png',multiplier:2});a.download=($('title').value.trim()||'無題')+'.png';a.click()};
 
-function applyBrush(){if(!canvas.isDrawingMode)return;canvas.freeDrawingBrush.color=tool==='eraser'?'rgba(0,0,0,0)':fg;canvas.freeDrawingBrush.width=tool==='eraser'?lw*3:lw}
+function makeBrush(){
+  if(tool==='eraser'){const b=new fabric.PencilBrush(canvas);hookEraser(b);return b}
+  const t=PENS[penType];
+  if(t.spray)return new fabric.SprayBrush(canvas);
+  if(t.dots)return new fabric.CircleBrush(canvas);
+  return new fabric.PencilBrush(canvas);
+}
+function applyBrush(){
+  if(!canvas.isDrawingMode)return;
+  const b=canvas.freeDrawingBrush;
+  if(tool==='eraser'){b.color='rgba(0,0,0,0)';b.width=lw*3;return}
+  const t=PENS[penType];
+  b.color=t.a<1?hexA(fg,t.a):fg;
+  b.width=Math.max(1,Math.round(lw*t.k));
+  b.strokeLineCap=t.cap||'round';
+  b.strokeLineJoin='round';
+  b.strokeDashArray=t.dash?[b.width*2,b.width*2]:null;
+  b.shadow=t.glow?new fabric.Shadow({blur:lw*t.glow,color:fg,offsetX:0,offsetY:0}):null;
+  if(t.spray){b.density=Math.max(10,lw*4);b.dotWidth=Math.max(1,lw/3);b.dotWidthVariance=Math.max(1,lw/4);b.randomOpacity=true;b.optimizeOverlapping=true}
+}
 function setTool(t){
   tool=t;
   document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
@@ -462,6 +485,7 @@ function setTool(t){
   canvas.renderAll();
 }
 document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>setTool(b.dataset.t));
+$('pent').onchange=e=>{penType=e.target.value;if(tool==='pen')refreshMode();else setTool('pen')};
 canvas.on('before:path:created',e=>{if(tool==='eraser')e.path.set({stroke:'#000',globalCompositeOperation:'destination-out'})});
 canvas.on('path:created',e=>e.path.set({selectable:false,evented:false}));
 
@@ -584,7 +608,7 @@ function hookEraser(b){
 function refreshMode(){
   const dm=(tool==='pen'||tool==='eraser')&&editable();
   canvas.isDrawingMode=dm;
-  if(dm){canvas.freeDrawingBrush=new fabric.PencilBrush(canvas);if(tool==='eraser')hookEraser(canvas.freeDrawingBrush);applyBrush()}
+  if(dm){canvas.freeDrawingBrush=makeBrush();applyBrush()}
   $('hint').textContent=hints[tool]+((tool!=='select'&&!editable())?' ※選択中のレイヤーは編集できません。':'');
 }
 let dragMoved=false;
@@ -754,7 +778,7 @@ function resetTools(){
   fg='#000000';bg='#ffffff';lw=4;
   $('lw').value=4;$('lwv').textContent='4px';
   $('fgb').style.background=fg;$('bgb').style.background=bg;pick('fg');
-  $('custom').value='#0067c0';$('fillm').value='outline';
+  $('custom').value='#0067c0';$('fillm').value='outline';penType='pen';$('pent').value='pen';
 }
 function showEditor(){resetTools();setPanel(false);$('home').hidden=true;$('editor').hidden=false;zoom=1;fitRibbon();document.title='ペイント - '+($('title').value||'無題')}
 function resetHist(){hist=[snapshot()];redoS=[]}
