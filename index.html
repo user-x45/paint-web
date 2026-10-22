@@ -924,9 +924,11 @@ $('lbgc').onchange=()=>snap();
 function resetTools(){
   fg='#000000';bg='#ffffff';setLw(4);
   $('fgb').style.background=fg;$('bgb').style.background=bg;pick('fg');
-  $('custom').value='#0067c0';$('fillm').value='outline';penType='pen';$('pent').value='pen';
+  $('custom').value='#0067c0';$('mcustom').value='#0067c0';$('fillm').value='outline';penType='pen';$('pent').value='pen';
+  textSize=32;textFont=FONTS[0].css;textBold=false;textItalic=false;lastShape='rect';
+  renderTextSheet();syncMobileColor();updateMobile();
 }
-function showEditor(){resetTools();closeSheet();setPanel(false);$('home').hidden=true;$('editor').hidden=false;zoom=1;fitRibbon();document.title='ペイント - '+($('title').value||'無題')}
+function showEditor(){resetTools();closeSheet();setPanel(false);$('home').hidden=true;$('editor').hidden=false;zoom=1;$('desk').scrollLeft=0;$('desk').scrollTop=0;fitRibbon();document.title='ペイント - '+($('title').value||'無題')}
 function resetHist(){hist=[snapshot()];redoS=[]}
 function newDrawing(){
   curId=uid();curCreated=Date.now();dirty=false;
