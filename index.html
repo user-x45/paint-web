@@ -158,6 +158,52 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#323232;color:#fff;padding:9px 16px;border-radius:6px;z-index:60;max-width:90vw}
 .card.new .th{background:var(--desk);color:var(--accent)}
 .empty{color:var(--muted);padding:24px 0}
+#mdock,#msheet,.mtop{display:none}
+.msw{width:18px;height:18px;border-radius:50%;border:1px solid var(--muted);display:inline-block;flex:none}
+@media (max-width:720px),(pointer:coarse) and (max-height:500px){
+.ribbon,.status{display:none!important}
+.top{padding:4px 6px;gap:4px}
+.top #save,.top #share,.top #tbToggle{display:none}
+.top #home_btn{font-size:0;padding:0;width:40px;height:40px;display:grid;place-items:center}
+.top #home_btn i{font-size:22px;margin:0}
+#title{max-width:none;height:36px;font-size:15px}
+.top .mtop{display:grid;width:40px;height:40px;padding:0}
+.top .mtop i{font-size:22px;margin:0}
+#editor{position:relative}
+#work{margin:0 4px}
+#desk{padding:6px}
+#lpanel{position:absolute;left:0;right:0;bottom:58px;width:auto;height:auto;max-height:50vh;z-index:40;border-radius:14px 14px 0 0;border-bottom:0;box-shadow:0 -6px 24px rgba(0,0,0,.25)}
+#llist{max-height:30vh}
+.lr{min-height:44px}
+.lr .ib{width:40px;height:40px}
+.grip{width:24px;height:40px}
+#mdock{display:flex;flex:none;height:58px;margin-top:4px;background:var(--panel);border-top:1px solid var(--line);touch-action:manipulation}
+#mdock button{flex:1;min-width:0;border:0;background:none;color:var(--ink);font:inherit;font-size:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;position:relative;cursor:pointer}
+#mdock button i{font-size:24px;line-height:1;margin:0}
+#mdock button span:not(#mcol){max-width:100%;padding:0 2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--muted)}
+#mdock button.on,#mdock button.on span{color:var(--accent)!important}
+#mdock button.on::after{content:"";position:absolute;top:0;left:28%;right:28%;height:3px;border-radius:0 0 3px 3px;background:var(--accent)}
+#mcol{display:block;width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);background:#000}
+#msheet{position:absolute;left:0;right:0;bottom:58px;z-index:45;display:block;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.25);max-height:55vh;overflow:auto;padding:8px 12px 14px;touch-action:manipulation}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.mh b{font-weight:600;font-size:14px}
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mgrid.g4{grid-template-columns:repeat(4,1fr)}
+.mbtn{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;font:inherit;font-size:12px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;min-height:56px}
+.mbtn.on{background:var(--sel);border-color:var(--accent)}
+.mbtn svg{width:64px;height:24px;display:block}
+.mbtn i{font-size:22px;line-height:1}
+.mseg{display:flex;gap:6px;margin-top:10px}
+.mseg .mbtn{flex:1;min-height:44px;flex-direction:row;gap:8px}
+#mpal{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-top:12px}
+#mpal button{aspect-ratio:1;min-width:0;border-radius:50%;border:1px solid rgba(128,128,128,.5);padding:0;cursor:pointer}
+.mrowx{display:flex;align-items:center;gap:10px;margin-top:12px}
+.mrowx label{color:var(--muted);width:56px;flex:none}
+.mrowx input[type=range]{flex:1;width:auto}
+.mrowx input[type=color]{width:56px;height:36px;padding:2px}
+.mlist{display:flex;flex-direction:column;gap:6px}
+.mlist .mbtn{flex-direction:row;justify-content:flex-start;padding:10px 12px;gap:10px;font-size:14px;min-height:46px}
+}
 </style>
 </head>
 <body>
@@ -175,7 +221,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 </div>
 
 <div id="editor" hidden>
-<div class="top"><button id="home_btn"><i class="ti ti-arrow-left" aria-hidden="true"></i>ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save">画像として保存</button><button id="share">共有</button><button class="ib" id="tbToggle" title="ツールバーを隠す" aria-label="ツールバーを隠す" aria-expanded="true" data-ic="up"></button></div>
+<div class="top"><button id="home_btn"><i class="ti ti-arrow-left" aria-hidden="true"></i>ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save">画像として保存</button><button id="share">共有</button><button class="ib mtop" id="mundo" title="元に戻す" aria-label="元に戻す" data-ic="undo"></button><button class="ib mtop" id="mredo" title="やり直し" aria-label="やり直し" data-ic="redo"></button><button class="ib mtop" id="mmore" title="その他" aria-label="その他" data-ic="more"></button><button class="ib" id="tbToggle" title="ツールバーを隠す" aria-label="ツールバーを隠す" aria-expanded="true" data-ic="up"></button></div>
 <div class="ribbon">
   <div class="g"><div class="row">
     <button class="ib" id="undo" title="元に戻す" data-ic="undo"></button>
@@ -219,6 +265,35 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 </aside>
 </div>
 <div class="status"><span id="hint"></span><span id="saved">自動保存: 待機中</span><span id="pos">0, 0 px</span><span id="size"></span><div class="zoomc"><button class="ib" id="zout" title="縮小" aria-label="縮小" data-ic="zoomout"></button><button id="zpct" title="全体表示" aria-label="全体表示">100%</button><button class="ib" id="zin" title="拡大" aria-label="拡大" data-ic="zoomin"></button></div></div>
+<nav id="mdock" aria-label="ツール">
+<button class="mt" data-mt="select"><i class="ti ti-pointer" aria-hidden="true"></i><span>選択</span></button>
+<button class="mt" data-mt="pen"><i class="ti ti-pencil" aria-hidden="true"></i><span id="mpenl">ペン</span></button>
+<button class="mt" data-mt="eraser"><i class="ti ti-eraser" aria-hidden="true"></i><span>消しゴム</span></button>
+<button class="mt" data-mt="shape"><i id="mshapeI" class="ti ti-rectangle" aria-hidden="true"></i><span id="mshapel">四角形</span></button>
+<button class="mt" data-mt="text"><i class="ti ti-typography" aria-hidden="true"></i><span>文字</span></button>
+<button id="mcolor" data-mt="color"><span id="mcol"></span><span>色</span></button>
+<button id="mlayers" data-mt="layers"><i class="ti ti-stack-2" aria-hidden="true"></i><span>レイヤー</span></button>
+</nav>
+<div id="msheet" hidden>
+<div class="mh"><b id="mtitle"></b><button class="ib sm" id="mclose" title="閉じる" aria-label="閉じる" data-ic="close"></button></div>
+<div data-p="pen" hidden><div class="mgrid" id="mpens"></div></div>
+<div data-p="shape" hidden><div class="mgrid g4" id="mshapes"></div><div class="mseg" id="mfill"></div></div>
+<div data-p="color" hidden>
+<div class="mseg"><button class="mbtn on" id="mfg"><span class="msw" id="mfgsw" style="background:#000"></span>線・文字</button><button class="mbtn" id="mbg"><span class="msw" id="mbgsw" style="background:#fff"></span>塗り</button></div>
+<div id="mpal"></div>
+<div class="mrowx"><label for="mcustom">カスタム</label><input type="color" id="mcustom" value="#0067c0"></div>
+<div class="mrowx"><label for="mlw">サイズ</label><input type="range" id="mlw" min="1" max="40" value="4"><span id="mlwv">4px</span></div>
+</div>
+<div data-p="more" hidden>
+<div class="mlist">
+<button class="mbtn" data-act="img"><i class="ti ti-photo-plus" aria-hidden="true"></i>画像を読み込む</button>
+<button class="mbtn" data-act="save"><i class="ti ti-download" aria-hidden="true"></i>画像として保存</button>
+<button class="mbtn" data-act="share"><i class="ti ti-share" aria-hidden="true"></i>共有</button>
+<button class="mbtn" data-act="del"><i class="ti ti-trash" aria-hidden="true"></i>選択を削除</button>
+</div>
+<div class="mrowx"><label>表示</label><button class="ib" id="mzout" title="縮小" aria-label="縮小" data-ic="zoomout"></button><button class="mbtn" id="mzpct" style="flex:1;min-height:40px">100%</button><button class="ib" id="mzin" title="拡大" aria-label="拡大" data-ic="zoomin"></button></div>
+</div>
+</div>
 </div>
 
 <script>
@@ -293,7 +368,8 @@ const ZMIN=0.1,ZMAX=8;
 let zoom=1,viewK=1;
 function fitView(){
   const d=$('desk');
-  const aw=d.offsetWidth-d.clientLeft*2-32,ah=d.offsetHeight-d.clientTop*2-32;
+  const cs=getComputedStyle(d),px=parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight),py=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
+  const aw=d.offsetWidth-d.clientLeft*2-px,ah=d.offsetHeight-d.clientTop*2-py;
   if(aw<=0||ah<=0)return;
   viewK=Math.min(aw/CW,ah/CH);
   zoom=Math.max(ZMIN/viewK,Math.min(zoom,ZMAX/viewK));
@@ -301,7 +377,7 @@ function fitView(){
   canvas.setDimensions({width:Math.floor(CW*sc)+'px',height:Math.floor(CH*sc)+'px'},{cssOnly:true});
   canvas.calcOffset();
   canvas.renderAll();
-  $('zpct').textContent=Math.round(sc*100)+'%';
+  $('zpct').textContent=$('mzpct').textContent=Math.round(sc*100)+'%';
   $('zin').disabled=zoom>=ZMAX/viewK-1e-6;
   $('zout').disabled=zoom<=ZMIN/viewK+1e-6;
 }
@@ -366,8 +442,8 @@ const COLORS='000000 7f7f7f 880015 ed1c24 ff7f27 fff200 22b14c 00a2e8 3f48cc a34
 COLORS.forEach(h=>{
   const b=document.createElement('button');b.style.background='#'+h;b.title='#'+h;
   b.onclick=()=>setCol('#'+h);b.oncontextmenu=e=>{e.preventDefault();setCol('#'+h,'bg')};$('sw').appendChild(b)});
-function setCol(c,t){t=t||target;if(t==='fg')fg=c;else bg=c;$(t==='fg'?'fgb':'bgb').style.background=c;applyBrush()}
-function pick(t){target=t;$('fgb').classList.toggle('t',t==='fg');$('bgb').classList.toggle('t',t==='bg')}
+function setCol(c,t){t=t||target;if(t==='fg')fg=c;else bg=c;$(t==='fg'?'fgb':'bgb').style.background=c;syncMobileColor();applyBrush()}
+function pick(t){target=t;$('fgb').classList.toggle('t',t==='fg');$('bgb').classList.toggle('t',t==='bg');syncMobileColor()}
 $('fgb').onclick=()=>pick('fg');$('bgb').onclick=()=>pick('bg');
 const ribbonEl=document.querySelector('.ribbon');
 function closePal(){ribbonEl.classList.remove('pal-open');$('palBtn').setAttribute('aria-expanded','false')}
@@ -407,7 +483,9 @@ if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWor
 addEventListener('resize',fitRibbon);
 addEventListener('orientationchange',fitRibbon);
 $('custom').oninput=e=>setCol(e.target.value);
-$('lw').oninput=e=>{lw=+e.target.value;$('lwv').textContent=lw+'px';applyBrush()};
+function setLw(v){lw=v;$('lw').value=v;$('mlw').value=v;$('lwv').textContent=v+'px';$('mlwv').textContent=v+'px';applyBrush()}
+$('lw').oninput=e=>setLw(+e.target.value);
+$('mlw').oninput=e=>setLw(+e.target.value);
 
 function setSaved(t){$('saved').textContent=t}
 function scheduleSave(){if(!curId)return;dirty=true;setSaved('自動保存: 変更あり…');clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,500)}
@@ -486,9 +564,11 @@ function setTool(t){
   refreshMode();
   canvas.defaultCursor=t==='select'?'default':'crosshair';
   canvas.renderAll();
+  updateMobile();
 }
 document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>setTool(b.dataset.t));
-$('pent').onchange=e=>{penType=e.target.value;if(tool==='pen')refreshMode();else setTool('pen')};
+function choosePen(k){penType=k;$('pent').value=k;if(tool==='pen')refreshMode();else setTool('pen');updateMobile()}
+$('pent').onchange=e=>choosePen(e.target.value);
 canvas.on('before:path:created',e=>{if(tool==='eraser')e.path.set({stroke:'#000',globalCompositeOperation:'destination-out'})});
 canvas.on('path:created',e=>e.path.set({selectable:false,evented:false}));
 
@@ -748,6 +828,8 @@ function followSelection(){
 canvas.on('selection:created',followSelection);
 canvas.on('selection:updated',followSelection);
 function setPanel(open){
+  if(open)closeSheet();
+  $('mlayers').classList.toggle('on',open);
   $('lpanel').hidden=!open;
   $('lbtn').classList.toggle('on',open);
   $('lbtn').setAttribute('aria-expanded',String(open));
@@ -778,12 +860,11 @@ $('lbgc').oninput=e=>setBgColor(e.target.value);
 $('lbgc').onchange=()=>snap();
 
 function resetTools(){
-  fg='#000000';bg='#ffffff';lw=4;
-  $('lw').value=4;$('lwv').textContent='4px';
+  fg='#000000';bg='#ffffff';setLw(4);
   $('fgb').style.background=fg;$('bgb').style.background=bg;pick('fg');
   $('custom').value='#0067c0';$('fillm').value='outline';penType='pen';$('pent').value='pen';
 }
-function showEditor(){resetTools();setPanel(false);$('home').hidden=true;$('editor').hidden=false;zoom=1;fitRibbon();document.title='ペイント - '+($('title').value||'無題')}
+function showEditor(){resetTools();closeSheet();setPanel(false);$('home').hidden=true;$('editor').hidden=false;zoom=1;fitRibbon();document.title='ペイント - '+($('title').value||'無題')}
 function resetHist(){hist=[snapshot()];redoS=[]}
 function newDrawing(){
   curId=uid();curCreated=Date.now();dirty=false;
@@ -1009,6 +1090,99 @@ $('imgIn').onchange=async e=>{
 $('homeImg').onclick=()=>chooseImage('new');
 $('imgBtn').onclick=()=>chooseImage('add');
 
+const PEN_NAMES={pen:'ペン',pencil:'鉛筆',fine:'細ペン',marker:'マーカー',highlighter:'蛍光ペン',dashed:'点線',neon:'ネオン',spray:'スプレー',dots:'点描'};
+const SHAPE_NAMES={line:'直線',arrow:'矢印',rect:'四角形',ellipse:'楕円'};
+const FILL_NAMES=[['outline','輪郭'],['both','輪郭+塗り'],['fill','塗りのみ']];
+const SHEET_TITLES={pen:'ペンの種類',shape:'図形',color:'色とサイズ',more:'その他'};
+let lastShape='rect',sheet=null;
+function penSvg(k){
+  const t=PENS[k];
+  if(t.spray||t.dots){
+    const n=t.spray?23:15,st=t.spray?2.4:3.8;
+    let c='';
+    for(let i=0;i<n;i++){
+      const x=6+i*st,y=12+Math.sin(i*(t.spray?1:1.6)/3.5)*7+(t.spray?((i*7)%5-2)*1.4:0);
+      c+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(t.spray?(0.9+(i%3)*0.3).toFixed(1):2.2)+'"/>';
+    }
+    return '<svg viewBox="0 0 64 24" fill="currentColor" aria-hidden="true">'+c+'</svg>';
+  }
+  const w=Math.max(1.5,Math.min(11,4*t.k));
+  const dash=t.dash?' stroke-dasharray="'+w*2+' '+w*2+'"':'';
+  const glow=t.glow?' style="filter:drop-shadow(0 0 3px currentColor)"':'';
+  return '<svg viewBox="0 0 64 24" aria-hidden="true"'+glow+'><path d="M6 17C18 3 30 3 36 12S50 21 58 7" fill="none" stroke="currentColor" stroke-width="'+w+'" stroke-opacity="'+t.a+'" stroke-linecap="'+(t.cap||'round')+'" stroke-linejoin="round"'+dash+'/></svg>';
+}
+function syncMobileColor(){
+  $('mcol').style.background=fg;
+  $('mfgsw').style.background=fg;
+  $('mbgsw').style.background=bg;
+  $('mfg').classList.toggle('on',target==='fg');
+  $('mbg').classList.toggle('on',target==='bg');
+}
+function updateMobile(){
+  const sh=shapes.includes(tool);
+  if(sh)lastShape=tool;
+  document.querySelectorAll('#mdock .mt').forEach(b=>b.classList.toggle('on',b.dataset.mt===tool||(b.dataset.mt==='shape'&&sh)));
+  $('mpenl').textContent=PEN_NAMES[penType];
+  $('mshapel').textContent=SHAPE_NAMES[lastShape];
+  $('mshapeI').className=P[lastShape];
+  document.querySelectorAll('#mpens [data-pen]').forEach(b=>b.classList.toggle('on',b.dataset.pen===penType));
+  document.querySelectorAll('#mshapes [data-shape]').forEach(b=>b.classList.toggle('on',sh&&b.dataset.shape===tool));
+  document.querySelectorAll('#mfill [data-fill]').forEach(b=>b.classList.toggle('on',b.dataset.fill===$('fillm').value));
+}
+function closeSheet(){sheet=null;$('msheet').hidden=true}
+function toggleSheet(name){
+  if(sheet===name){closeSheet();return}
+  sheet=name;
+  setPanel(false);
+  $('mtitle').textContent=SHEET_TITLES[name];
+  document.querySelectorAll('#msheet [data-p]').forEach(p=>p.hidden=p.dataset.p!==name);
+  $('msheet').hidden=false;
+  updateMobile();
+}
+Object.keys(PENS).forEach(k=>{
+  const b=document.createElement('button');b.className='mbtn';b.dataset.pen=k;
+  b.innerHTML=penSvg(k)+'<span>'+PEN_NAMES[k]+'</span>';
+  b.onclick=()=>{choosePen(k);closeSheet()};
+  $('mpens').appendChild(b);
+});
+Object.keys(SHAPE_NAMES).forEach(k=>{
+  const b=document.createElement('button');b.className='mbtn';b.dataset.shape=k;
+  b.innerHTML=ic(k)+'<span>'+SHAPE_NAMES[k]+'</span>';
+  b.onclick=()=>{setTool(k);closeSheet()};
+  $('mshapes').appendChild(b);
+});
+FILL_NAMES.forEach(([v,l])=>{
+  const b=document.createElement('button');b.className='mbtn';b.dataset.fill=v;b.textContent=l;
+  b.onclick=()=>{$('fillm').value=v;updateMobile()};
+  $('mfill').appendChild(b);
+});
+COLORS.forEach(h=>{
+  const b=document.createElement('button');b.style.background='#'+h;b.setAttribute('aria-label','#'+h);
+  b.onclick=()=>setCol('#'+h);
+  $('mpal').appendChild(b);
+});
+$('mfg').onclick=()=>pick('fg');
+$('mbg').onclick=()=>pick('bg');
+$('mcustom').oninput=e=>setCol(e.target.value);
+document.querySelectorAll('#mdock [data-mt]').forEach(b=>b.onclick=()=>{
+  const k=b.dataset.mt;
+  if(k==='pen'){if(tool==='pen')toggleSheet('pen');else{closeSheet();setTool('pen')}}
+  else if(k==='shape')toggleSheet('shape');
+  else if(k==='color')toggleSheet('color');
+  else if(k==='layers')setPanel($('lpanel').hidden);
+  else{closeSheet();setTool(k)}
+});
+$('mundo').onclick=()=>$('undo').click();
+$('mredo').onclick=()=>$('redo').click();
+$('mmore').onclick=()=>toggleSheet('more');
+$('mclose').onclick=closeSheet;
+const ACTS={img:'imgBtn',save:'save',share:'share',del:'del'};
+document.querySelectorAll('#msheet [data-act]').forEach(b=>b.onclick=()=>{$(ACTS[b.dataset.act]).click();closeSheet()});
+$('mzout').onclick=()=>$('zout').click();
+$('mzin').onclick=()=>$('zin').click();
+$('mzpct').onclick=()=>$('zpct').click();
+$('desk').addEventListener('pointerdown',closeSheet,true);
+updateMobile();syncMobileColor();
 renderHome();
 </script>
 </body>
