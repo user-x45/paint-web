@@ -1,4 +1,4 @@
-const CACHE='paint-v1';
+const CACHE='paint-v2';
 const CORE=['./','index.html','manifest.json','favicon/32.png','favicon/96.png','favicon/144.png','favicon/152.png','favicon/180.png','favicon/192.png','favicon/512.png'];
 const CDN=['https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js','https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css'];
 
@@ -45,7 +45,7 @@ self.addEventListener('fetch',e=>{
     e.respondWith((async()=>{
       const cache=await caches.open(CACHE);
       try{
-        const res=await fetch(req);
+        const res=await fetch(req,{cache:'no-cache'});
         if(res.ok)cache.put(req,res.clone());
         return res;
       }catch(err){
