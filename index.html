@@ -505,7 +505,7 @@ $('tbToggle').onclick=()=>setToolbar(ribbonEl.hidden);
 let tbHidden=false;
 try{tbHidden=localStorage.getItem('toolbarHidden')==='1'}catch(e){}
 if(tbHidden)setToolbar(false);
-if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').then(()=>navigator.serviceWorker.ready).then(r=>{if(r.active)r.active.postMessage('precache-fonts')}).catch(()=>{}));
 addEventListener('resize',fitRibbon);
 addEventListener('orientationchange',fitRibbon);
 $('custom').oninput=e=>setCol(e.target.value);
