@@ -392,6 +392,24 @@ const hints={select:'オブジェクトをクリックして移動・変形し�
 const CW=1152,CH=648;
 const ZMIN=0.1,ZMAX=8;
 let zoom=1,viewK=1;
+const SEL_COLOR='#ff5a00';
+function applySelectionStyle(sc){
+  const o=fabric.Object.prototype;
+  o.borderColor=SEL_COLOR;
+  o.borderDashArray=null;
+  o.cornerColor='#ffffff';
+  o.cornerStrokeColor=SEL_COLOR;
+  o.cornerStyle='circle';
+  o.transparentCorners=false;
+  o.cornerSize=14/sc;
+  o.touchCornerSize=30/sc;
+  o.borderScaleFactor=2.5/sc;
+  o.padding=3/sc;
+  o.borderOpacityWhenMoving=1;
+  canvas.selectionColor='rgba(255,90,0,.12)';
+  canvas.selectionBorderColor=SEL_COLOR;
+  canvas.selectionLineWidth=2/sc;
+}
 function fitView(){
   const d=$('desk');
   const cs=getComputedStyle(d),px=parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight),py=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
@@ -402,6 +420,7 @@ function fitView(){
   const sc=viewK*zoom;
   canvas.setDimensions({width:Math.floor(CW*sc)+'px',height:Math.floor(CH*sc)+'px'},{cssOnly:true});
   canvas.calcOffset();
+  applySelectionStyle(sc);
   canvas.renderAll();
   $('zpct').textContent=$('mzpct').textContent=Math.round(sc*100)+'%';
   $('zin').disabled=zoom>=ZMAX/viewK-1e-6;
@@ -505,7 +524,6 @@ $('tbToggle').onclick=()=>setToolbar(ribbonEl.hidden);
 let tbHidden=false;
 try{tbHidden=localStorage.getItem('toolbarHidden')==='1'}catch(e){}
 if(tbHidden)setToolbar(false);
-if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').then(()=>navigator.serviceWorker.ready).then(r=>{if(r.active)r.active.postMessage('precache-fonts')}).catch(()=>{}));
 addEventListener('resize',fitRibbon);
 addEventListener('orientationchange',fitRibbon);
 $('custom').oninput=e=>setCol(e.target.value);
@@ -658,22 +676,136 @@ canvas.on('mouse:down',o=>{
   drawing=makeShape(tool,p.x,p.y,p.x,p.y,false);
   busy=true;canvas.add(drawing);busy=false;
 });
+const GUIDE_COLOR='#ff2d95',ANGLE_COLOR='#00b050';
+let guideLines=[],guideLabels=[];
+const viewScale=()=>viewK*zoom;
+function clearGuides(){
+  if(!guideLines.length&&!guideLabels.length)return;
+  guideLines=[];guideLabels=[];
+  canvas.requestRenderAll();
+}
+canvas.on('after:render',()=>{
+  if(!guideLines.length&&!guideLabels.length)return;
+  const ctx=canvas.contextContainer,sc=viewScale();
+  ctx.save();
+  ctx.lineJoin='miter';
+  guideLines.forEach(g=>{
+    ctx.beginPath();
+    ctx.strokeStyle=g.c;
+    ctx.lineWidth=(g.w||1.5)/sc;
+    ctx.setLineDash(g.solid?[]:[6/sc,4/sc]);
+    g.pts.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  guideLabels.forEach(l=>{
+    const fs=(l.hit?15:12)/sc,pad=5/sc;
+    ctx.font=(l.hit?'bold ':'')+fs+'px "Segoe UI","Noto Sans JP",sans-serif';
+    ctx.textBaseline='middle';
+    const tw=ctx.measureText(l.text).width,h=fs+pad*2;
+    let x=l.x+10/sc,y=l.y-18/sc;
+    x=Math.max(2/sc,Math.min(x,CW-tw-pad*2-2/sc));
+    y=Math.max(h/2+2/sc,Math.min(y,CH-h/2-2/sc));
+    ctx.fillStyle=l.hit?ANGLE_COLOR:'rgba(40,40,40,.85)';
+    ctx.beginPath();
+    if(ctx.roundRect)ctx.roundRect(x,y-h/2,tw+pad*2,h,4/sc);else ctx.rect(x,y-h/2,tw+pad*2,h);
+    ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.fillText(l.text,x+pad,y);
+  });
+  ctx.restore();
+});
+const nearestRight=a=>{const n=Math.round(a/90)*90;return{n:((n%360)+360)%360,hit:Math.abs(a-n)<3}};
+const angleText=(a,hit)=>Math.round(a)+'°'+(hit?(a%180===90?' 直角 ✓':' ✓'):'');
+function lineSnap(p,show){
+  const isLine=tool==='line'||tool==='arrow'||tool==='dblarrow';
+  if(show){guideLines=[];guideLabels=[]}
+  if(!isLine||!start)return p;
+  const dx=p.x-start.x,dy=p.y-start.y,len=Math.hypot(dx,dy);
+  if(len<3)return p;
+  let a=(Math.atan2(-dy,dx)*180/Math.PI+360)%360;
+  const r=nearestRight(a);
+  let q=p;
+  if(r.hit){
+    const rad=r.n*Math.PI/180,ux=Math.cos(rad),uy=-Math.sin(rad);
+    q={x:start.x+len*ux,y:start.y+len*uy};
+    a=r.n;
+    if(show){
+      const sc=viewScale(),s=16/sc,vx=-uy,vy=ux;
+      guideLines.push({c:ANGLE_COLOR,pts:[[start.x-ux*CW,start.y-uy*CW],[start.x+ux*CW,start.y+uy*CW]]});
+      guideLines.push({c:ANGLE_COLOR,pts:[[start.x-vx*CW,start.y-vy*CW],[start.x+vx*CW,start.y+vy*CW]]});
+      guideLines.push({c:ANGLE_COLOR,w:2.5,solid:true,pts:[[start.x+ux*s,start.y+uy*s],[start.x+(ux+vx)*s,start.y+(uy+vy)*s],[start.x+vx*s,start.y+vy*s]]});
+    }
+  }
+  if(show)guideLabels.push({x:q.x,y:q.y,text:angleText(a,r.hit),hit:r.hit});
+  return q;
+}
 canvas.on('mouse:move',o=>{
   const p=canvas.getPointer(o.e);$('pos').textContent=Math.round(p.x)+', '+Math.round(p.y)+' px';
   if(!drawing)return;
+  const q=o.e.shiftKey?p:lineSnap(p,true);
   busy=true;canvas.remove(drawing);
-  drawing=makeShape(tool,start.x,start.y,p.x,p.y,o.e.shiftKey);
+  drawing=makeShape(tool,start.x,start.y,q.x,q.y,o.e.shiftKey);
   canvas.add(drawing);busy=false;
   canvas.renderAll();
 });
 canvas.on('mouse:up',o=>{
+  clearGuides();
   if(!drawing)return;
   const p=canvas.getPointer(o.e);
+  const q=o.e.shiftKey?p:lineSnap(p,false);
   busy=true;canvas.remove(drawing);drawing=null;
   const tiny=Math.hypot(p.x-start.x,p.y-start.y)<3;
-  if(!tiny)canvas.add(makeShape(tool,start.x,start.y,p.x,p.y,o.e.shiftKey));
+  if(!tiny)canvas.add(makeShape(tool,start.x,start.y,q.x,q.y,o.e.shiftKey));
   busy=false;if(!tiny)snap();canvas.renderAll();
 });
+canvas.on('object:moving',e=>{
+  const t=e.target;
+  if(!t)return;
+  const th=6/viewScale();
+  const skip=new Set(t._objects||[]);skip.add(t);
+  const xs=[0,CW/2,CW],ys=[0,CH/2,CH];
+  canvas.getObjects().forEach(o=>{
+    if(skip.has(o)||!o.visible||isEraserStroke(o))return;
+    const b=o.getBoundingRect(true,true);
+    xs.push(b.left,b.left+b.width/2,b.left+b.width);
+    ys.push(b.top,b.top+b.height/2,b.top+b.height);
+  });
+  const r=t.getBoundingRect(true,true);
+  const mx=[r.left,r.left+r.width/2,r.left+r.width],my=[r.top,r.top+r.height/2,r.top+r.height];
+  const best=(mine,cands)=>{
+    let d=null,at=0;
+    mine.forEach(m=>cands.forEach(c=>{const v=c-m;if(Math.abs(v)<=th&&(d===null||Math.abs(v)<Math.abs(d))){d=v;at=c}}));
+    return{d,at};
+  };
+  const bx=best(mx,xs),by=best(my,ys);
+  guideLines=[];guideLabels=[];
+  if(bx.d!==null){t.set('left',t.left+bx.d);guideLines.push({c:GUIDE_COLOR,pts:[[bx.at,0],[bx.at,CH]]})}
+  if(by.d!==null){t.set('top',t.top+by.d);guideLines.push({c:GUIDE_COLOR,pts:[[0,by.at],[CW,by.at]]})}
+  t.setCoords();
+  canvas.requestRenderAll();
+});
+canvas.on('object:rotating',e=>{
+  const t=e.target;
+  if(!t)return;
+  let a=((t.angle%360)+360)%360;
+  const r=nearestRight(a);
+  if(r.hit){t.set('angle',r.n);a=r.n;t.setCoords()}
+  const c=t.getCenterPoint(),b=t.getBoundingRect(true,true);
+  guideLines=[];
+  if(r.hit){
+    guideLines.push({c:ANGLE_COLOR,pts:[[0,c.y],[CW,c.y]]});
+    guideLines.push({c:ANGLE_COLOR,pts:[[c.x,0],[c.x,CH]]});
+    const s=16/viewScale();
+    guideLines.push({c:ANGLE_COLOR,w:2.5,solid:true,pts:[[c.x+s,c.y],[c.x+s,c.y-s],[c.x,c.y-s]]});
+  }else{
+    guideLines.push({c:GUIDE_COLOR,w:1,pts:[[c.x,0],[c.x,CH]]});
+  }
+  guideLabels=[{x:c.x,y:b.top,text:angleText(a,r.hit),hit:r.hit}];
+  canvas.requestRenderAll();
+});
+canvas.on('object:modified',clearGuides);
+canvas.on('selection:cleared',clearGuides);
 addEventListener('keydown',e=>{
   if($('editor').hidden||$('modal'))return;
   const ae=document.activeElement;if(ae&&(ae.tagName==='INPUT'||ae.tagName==='SELECT'))return;
