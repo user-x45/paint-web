@@ -229,10 +229,23 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .mfont{min-height:52px;gap:2px;padding:6px 4px}
 .mfont .s{font-size:18px;line-height:1.3;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .mfont .n{font-size:10px;color:var(--muted)}
+.htitle{display:flex;align-items:center;gap:6px;flex:1}
+.hhead h1{flex:0 1 auto}
+.htitle .ib{margin-left:auto}
+.about{text-align:center}
+.about img{width:80px;height:80px;border-radius:18px;display:block;margin:4px auto 12px;box-shadow:0 2px 10px rgba(0,0,0,.25);background:var(--bg)}
+.about h2{font-size:20px;font-weight:600;margin:0 0 6px}
+.about .lead{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.6;white-space:normal}
+.about ul{list-style:none;margin:0 0 14px;padding:0;text-align:left;display:flex;flex-direction:column;gap:8px}
+.about li{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5}
+.about li i{font-size:18px;color:var(--accent);flex:none;margin-top:1px}
+.about .cr{margin:0 0 14px;color:var(--muted);font-size:11px;line-height:1.6;white-space:normal}
+.about .mrow{justify-content:center}
 @media (max-width:720px){
 #home{padding:16px 14px 28px}
 .hhead{gap:10px;margin-bottom:16px;align-items:stretch}
-.hhead h1{flex:1 0 100%;font-size:24px;letter-spacing:.02em}
+.htitle{flex:1 0 100%}
+.hhead h1{font-size:24px;letter-spacing:.02em}
 .hhead .pbtn{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:76px;padding:10px 4px;font-size:clamp(10px,3.1vw,12px);line-height:1.3;text-align:center;white-space:nowrap;border-radius:12px}
 .hhead .pbtn i{margin:0;font-size:24px}
 .sub{font-size:12px;margin:0 0 10px}
@@ -251,7 +264,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 
 <div id="home">
   <div class="hhead">
-    <h1>ペイント</h1>
+    <div class="htitle"><h1>ペイント</h1><button class="ib" id="homeAbout" title="このアプリについて" aria-label="このアプリについて" data-ic="info"></button></div>
     <button class="pbtn" id="homeNew"><i class="ti ti-plus" aria-hidden="true"></i>新規作成</button>
     <button class="pbtn sec" id="homeImg"><i class="ti ti-photo-plus" aria-hidden="true"></i>画像から新規作成</button>
     <button class="pbtn sec" id="homePrj"><i class="ti ti-file-import" aria-hidden="true"></i>ファイルを開く</button>
@@ -337,6 +350,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 <button class="mbtn" data-act="share"><i class="ti ti-share" aria-hidden="true"></i>共有</button>
 <button class="mbtn" data-act="export"><i class="ti ti-file-export" aria-hidden="true"></i>ファイルに書き出し</button>
 <button class="mbtn" data-act="import"><i class="ti ti-file-import" aria-hidden="true"></i>ファイルを読み込む</button>
+<button class="mbtn" data-act="about"><i class="ti ti-info-circle" aria-hidden="true"></i>このアプリについて</button>
 <button class="mbtn" data-act="del"><i class="ti ti-trash" aria-hidden="true"></i>選択を削除</button>
 </div>
 <div class="mrowx"><label>表示</label><button class="ib" id="mzout" title="縮小" aria-label="縮小" data-ic="zoomout"></button><button class="mbtn" id="mzpct" style="flex:1;min-height:40px">100%</button><button class="ib" id="mzin" title="拡大" aria-label="拡大" data-ic="zoomin"></button></div>
@@ -346,7 +360,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 
 <script>
 const $=id=>document.getElementById(id);
-const P={select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out',dblarrow:'ti ti-arrows-horizontal',roundrect:'ti ti-square-rounded',triangle:'ti ti-triangle',diamond:'ti ti-diamond',pentagon:'ti ti-pentagon',hexagon:'ti ti-hexagon',star:'ti ti-star',heart:'ti ti-heart',bubble:'ti ti-message',cross:'ti ti-plus',tofront:'ti ti-arrow-bar-up',forward:'ti ti-arrow-up',backward:'ti ti-arrow-down',toback:'ti ti-arrow-bar-down',copy:'ti ti-copy',paste:'ti ti-clipboard',fexport:'ti ti-file-export',fimport:'ti ti-file-import'};
+const P={select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out',dblarrow:'ti ti-arrows-horizontal',roundrect:'ti ti-square-rounded',triangle:'ti ti-triangle',diamond:'ti ti-diamond',pentagon:'ti ti-pentagon',hexagon:'ti ti-hexagon',star:'ti ti-star',heart:'ti ti-heart',bubble:'ti ti-message',cross:'ti ti-plus',tofront:'ti ti-arrow-bar-up',forward:'ti ti-arrow-up',backward:'ti ti-arrow-down',toback:'ti ti-arrow-bar-down',copy:'ti ti-copy',paste:'ti ti-clipboard',info:'ti ti-info-circle',fexport:'ti ti-file-export',fimport:'ti ti-file-import'};
 const ic=n=>'<i class="'+P[n]+'" aria-hidden="true"></i>';
 document.querySelectorAll('[data-ic]').forEach(b=>{b.innerHTML=ic(b.dataset.ic)});
 
@@ -1532,6 +1546,30 @@ $('homePrj').onclick=pickProject;
 $('pimp').onclick=pickProject;
 $('pexp').onclick=exportCurrent;
 
+function showAbout(){
+  const prev=document.activeElement;
+  const ov=document.createElement('div');ov.id='modal';
+  const box=document.createElement('div');box.className='mbox about';
+  box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label','このアプリについて');
+  box.innerHTML='<img src="favicon/192.png" alt="" onerror="this.style.visibility=\'hidden\'">'
+    +'<h2>ペイント</h2>'
+    +'<p class="lead">ブラウザで使えるシンプルなペイントツールです。レイヤーに対応していて、自由に絵を描けます。</p>'
+    +'<ul>'
+    +'<li>'+ic('layers')+'<span>レイヤー、図形、文字、画像の読み込みに対応</span></li>'
+    +'<li>'+ic('lock')+'<span>絵はこのブラウザ内に自動保存され、外部へは送信されません</span></li>'
+    +'<li>'+ic('fexport')+'<span>「.paint」ファイルで書き出し・読み込み、PNG画像として保存もできます</span></li>'
+    +'</ul>'
+    +'<p class="cr">使用ライブラリ: Fabric.js / Tabler Icons</p>';
+  const row=document.createElement('div');row.className='mrow';
+  const ok=document.createElement('button');ok.className='ok';ok.textContent='閉じる';
+  const finish=()=>{ov.remove();try{prev&&prev.focus&&prev.focus()}catch(e){}};
+  ok.onclick=finish;row.appendChild(ok);box.appendChild(row);ov.appendChild(box);
+  ov.addEventListener('mousedown',e=>{if(e.target===ov)finish()});
+  ov.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();finish()}});
+  document.body.appendChild(ov);ok.focus();
+}
+$('homeAbout').onclick=showAbout;
+
 const PEN_NAMES={pen:'ペン',pencil:'鉛筆',fine:'細ペン',marker:'マーカー',highlighter:'蛍光ペン',dashed:'点線',neon:'ネオン',spray:'スプレー',dots:'点描'};
 const SHAPE_NAMES={line:'直線',arrow:'矢印',dblarrow:'双方向矢印',rect:'四角形',roundrect:'角丸四角形',ellipse:'楕円',triangle:'三角形',diamond:'ひし形',pentagon:'五角形',hexagon:'六角形',star:'星',heart:'ハート',bubble:'吹き出し',cross:'十字'};
 Object.keys(SHAPE_NAMES).forEach(k=>{if(!hints[k])hints[k]='ドラッグで'+SHAPE_NAMES[k]+'を描きます。Shiftキーで縦横比を固定します。'});
@@ -1622,7 +1660,7 @@ $('mundo').onclick=()=>$('undo').click();
 $('mredo').onclick=()=>$('redo').click();
 $('mmore').onclick=()=>toggleSheet('more');
 $('mclose').onclick=closeSheet;
-const ACTS={img:'imgBtn',save:'save',share:'share',del:'del',export:'pexp',import:'pimp'};
+const ACTS={img:'imgBtn',save:'save',share:'share',del:'del',export:'pexp',import:'pimp',about:'homeAbout'};
 document.querySelectorAll('#msheet [data-act]').forEach(b=>b.onclick=()=>{$(ACTS[b.dataset.act]).click();closeSheet()});
 $('mzout').onclick=()=>$('zout').click();
 $('mzin').onclick=()=>$('zin').click();
