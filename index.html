@@ -146,7 +146,6 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 #menu button:hover,#menu button:focus-visible{background:var(--hover)}
 #menu button.danger{color:#d13438}
 #menu button i{margin-right:8px;font-size:16px;vertical-align:-2px}
-#menu button.ni{padding-left:36px}
 #menu button:disabled{opacity:.4;cursor:default}
 #menu button:disabled:hover{background:none}
 #menu .msep{height:1px;background:var(--line);margin:4px 0}
@@ -303,7 +302,7 @@ body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{dis
 </div>
 
 <div id="editor" hidden>
-<div class="top"><button id="home_btn"><i class="ti ti-arrow-left" aria-hidden="true"></i>ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save">画像として保存</button><button id="share">共有</button><button class="ib mtop" id="mundo" title="元に戻す" aria-label="元に戻す" data-ic="undo"></button><button class="ib mtop" id="mredo" title="やり直し" aria-label="やり直し" data-ic="redo"></button><button class="ib dtop" id="mimg" title="画像を読み込む" aria-label="画像を読み込む" data-ic="photo"></button><button class="ib dtop" id="mdel" title="選択を削除 (Delete)" aria-label="選択を削除" data-ic="trash"></button><button class="ib mtop" id="mmore" title="その他" aria-label="その他" data-ic="more"></button><button class="ib dtop" id="pexp" title="ファイルに書き出し (.paint)" aria-label="ファイルに書き出し" data-ic="fexport"></button><button class="ib dtop" id="pimp" title="ファイルを読み込む (.paint)" aria-label="ファイルを読み込む" data-ic="fimport"></button><button class="ib" id="tbToggle" title="ツールバーを隠す" aria-label="ツールバーを隠す" aria-expanded="true" data-ic="up"></button></div>
+<div class="top"><button id="home_btn"><i class="ti ti-arrow-left" aria-hidden="true"></i>ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save"><i class="ti ti-download" aria-hidden="true"></i>画像として保存</button><button id="share"><i class="ti ti-share" aria-hidden="true"></i>共有</button><button class="ib mtop" id="mundo" title="元に戻す" aria-label="元に戻す" data-ic="undo"></button><button class="ib mtop" id="mredo" title="やり直し" aria-label="やり直し" data-ic="redo"></button><button class="ib dtop" id="mimg" title="画像を読み込む" aria-label="画像を読み込む" data-ic="photo"></button><button class="ib dtop" id="mdel" title="選択を削除 (Delete)" aria-label="選択を削除" data-ic="trash"></button><button class="ib mtop" id="mmore" title="その他" aria-label="その他" data-ic="more"></button><button class="ib dtop" id="pexp" title="ファイルに書き出し (.paint)" aria-label="ファイルに書き出し" data-ic="fexport"></button><button class="ib dtop" id="pimp" title="ファイルを読み込む (.paint)" aria-label="ファイルを読み込む" data-ic="fimport"></button><button class="ib" id="tbToggle" title="ツールバーを隠す" aria-label="ツールバーを隠す" aria-expanded="true" data-ic="up"></button></div>
 <div class="ribbon">
   <div class="g"><div class="row">
     <button class="ib" id="undo" title="元に戻す" data-ic="undo"></button>
@@ -1468,10 +1467,9 @@ function openMenu(btn,m){
   closeMenu();if(was)return;
   btn.classList.add('open');
   const menu=document.createElement('div');menu.id='menu';menu.setAttribute('role','menu');
-  [['名前を変更',renameDrawing],['画像として保存',downloadDrawing,0,'download'],['ファイルに書き出し',exportSaved],['共有',shareDrawing,0,'share'],['コピー',copyDrawing],['削除',deleteDrawing,1]].forEach(([l,fn,danger,icon])=>{
+  [['名前を変更',renameDrawing,0,'pencil'],['画像として保存',downloadDrawing,0,'download'],['ファイルに書き出し',exportSaved,0,'file-export'],['共有',shareDrawing,0,'share'],['コピー',copyDrawing,0,'copy'],['削除',deleteDrawing,1,'trash']].forEach(([l,fn,danger,icon])=>{
     const b=document.createElement('button');b.setAttribute('role','menuitem');
-    if(icon){const i=document.createElement('i');i.className='ti ti-'+icon;i.setAttribute('aria-hidden','true');b.append(i,l)}
-    else{b.textContent=l;b.classList.add('ni')}
+    const i=document.createElement('i');i.className='ti ti-'+icon;i.setAttribute('aria-hidden','true');b.append(i,l);
     if(danger)b.classList.add('danger');
     b.onclick=e=>{e.stopPropagation();closeMenu();fn(m)};
     menu.appendChild(b);
@@ -2375,14 +2373,12 @@ function openShare(){
     if(cloud&&cloud.mode==='view')addLink('閲覧用リンク（見るだけ）',shareUrl(cloud.id,cloud.editKey));
     const acts=document.createElement('div');acts.className='acts';
     acts.appendChild(btn('画像として共有',()=>{close();shareCurrent()}));
-    const linked=!!cloud&&cloud.mode!=='private';
-    const cb=btn('Classroomで共有',()=>{
-      const u='https://classroom.google.com/share?url='+encodeURIComponent(shareUrl(cloud.id,cloud.editKey))+'&title='+encodeURIComponent($('title').value.trim()||'無題');
-      window.open(u,'_blank','noopener');
-    });
-    cb.disabled=working||!linked;
-    if(!linked)cb.title='閲覧者か編集者を選ぶと使えます';
-    acts.appendChild(cb);
+    if(cloud&&cloud.mode!=='private'){
+      acts.appendChild(btn('Classroomで共有',()=>{
+        const u='https://classroom.google.com/share?url='+encodeURIComponent(shareUrl(cloud.id,cloud.editKey))+'&title='+encodeURIComponent($('title').value.trim()||'無題');
+        window.open(u,'_blank','noopener');
+      }));
+    }
     if(cloud){
       acts.appendChild(btn('リンクを再発行',rotate));
     }
