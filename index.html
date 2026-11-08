@@ -1324,7 +1324,7 @@ function resetTools(){
   fg='#000000';bg='#ffffff';setLw(4);
   $('fgb').style.background=fg;$('bgb').style.background=bg;pick('fg');
   $('custom').value='#0067c0';$('mcustom').value='#0067c0';$('fillm').value='outline';penType='pen';$('pent').value='pen';
-  textSize=32;textFont=FONTS[0].css;textBold=false;textItalic=false;lastShape='rect';
+  textSize=32;textFont=FONTS[0].css;textBold=false;textItalic=false;lastShape='rect';colorPending=false;tbHidden=false;setToolbar(true);
   renderTextSheet();syncMobileColor();updateMobile();
 }
 function showEditor(){resetTools();closeSheet();setPanel(false);$('home').hidden=true;$('editor').hidden=false;zoom=1;$('desk').scrollLeft=0;$('desk').scrollTop=0;fitRibbon();document.title='ペイント - '+($('title').value||'無題')}
@@ -1351,7 +1351,7 @@ async function openDrawing(id){
   $('title').value=m.title||'';setSaved('自動保存: 保存済み');
   showEditor();
   layers=normalizeLayers(d.layers||[],d.c&&d.c.background);
-  activeLayer=layers.some(l=>l.id===d.active)?d.active:layers[layers.length-1].id;
+  activeLayer=firstDrawLayer().id;
   busy=true;
   canvas.loadFromJSON(d.c,()=>{
     setSize(CW,CH);
@@ -1878,9 +1878,10 @@ function syncUrl(){
   try{history.replaceState(null,'',location.pathname+location.search+h)}catch(e){}
 }
 
-function applyData(d,done){
+function applyData(d,done,fresh){
+  const keep=activeLayer;
   layers=normalizeLayers(d.layers||[],d.c&&d.c.background);
-  activeLayer=layers.some(l=>l.id===d.active)?d.active:layers[layers.length-1].id;
+  activeLayer=fresh?firstDrawLayer().id:layers.some(l=>l.id===keep)?keep:firstDrawLayer().id;
   busy=true;
   canvas.loadFromJSON(d.c,()=>{
     setSize(CW,CH);
@@ -2267,9 +2268,10 @@ async function openShared(id,key){
   applyRole();
   showEditor();
   applyData(r.data,()=>{
+    if(!ro)setTool('pen');
     setSaved(ro?'共有リンクで閲覧中':'共有リンクで編集中');
     $('size').textContent=canvas.width+' × '+canvas.height+' px';
-  });
+  },true);
 }
 async function enterFromHash(){
   const p=parseShare();
