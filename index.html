@@ -1533,9 +1533,20 @@ const fileName=(m,ext)=>((m.title||'無題').replace(/[\\/:*?"<>|]/g,'_'))+'.'+e
 const webpOk=document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp');
 const FORMATS=[
   {k:'png',l:'PNG',d:'劣化がなく、透明も保てます。通常はこちらがおすすめです。',mime:'image/png',ext:'png',rec:true},
-  {k:'jpeg',l:'JPEG',d:'ファイルサイズが小さくなります。透明な部分は白になります。',mime:'image/jpeg',ext:'jpg'}
+  {k:'jpeg',l:'JPEG',d:'ファイルサイズが小さくなります。透明な部分は白になります。',mime:'image/jpeg',ext:'jpg'},
+  {k:'webp',l:'WebP',d:'小さく高画質で、透明も保てます。対応していないソフトもあります。',mime:'image/webp',ext:'webp'}
 ];
-if(webpOk)FORMATS.push({k:'webp',l:'WebP',d:'小さく高画質で、透明も保てます。対応していないソフトもあります。',mime:'image/webp',ext:'webp'});
+let webpMod=null;
+const loadWebp=()=>webpMod||(webpMod=import('https://cdn.jsdelivr.net/npm/wasm-webp@0.1.0/dist/esm/webp-wasm.js').then(m=>m.default()).catch(e=>{webpMod=null;throw e}));
+async function encodeWebp(c,q){
+  if(webpOk)return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('encode')),'image/webp',q));
+  toast('WebP変換の準備中です…');
+  const mod=await loadWebp();
+  const img=c.getContext('2d').getImageData(0,0,c.width,c.height);
+  const out=mod.encodeRGBA(new Uint8Array(img.data.buffer),c.width,c.height,Math.round(q*100));
+  if(!out)throw new Error('encode');
+  return new Blob([out],{type:'image/webp'});
+}
 let saveOpt={fmt:'png',q:.92};
 try{
   const o=JSON.parse(localStorage.getItem('saveFmt'));
@@ -1553,6 +1564,7 @@ async function encodeImage(png,f){
   if(f.k==='jpeg'){x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height)}
   x.drawImage(bmp,0,0);
   if(bmp.close)bmp.close();
+  if(f.k==='webp')return encodeWebp(c,f.q);
   return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('encode')),f.mime,f.q));
 }
 function pickSaveFormat(){
