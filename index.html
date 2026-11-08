@@ -1827,7 +1827,7 @@ function errMsg(e){
 }
 const MODES={
   private:{l:'自分のみ',d:'自分だけが使えます。リンクは無効になりますが、再び共有すると同じリンクに戻ります。',i:'lock'},
-  view:{l:'閲覧者',d:'リンクを知っている人は見るだけできます。',i:'eye'},
+  view:{l:'閲覧者',d:'リンクを知っている人は閲覧のみできます。',i:'eye'},
   edit:{l:'編集者',d:'リンクを知っている人は編集もできます。',i:'pencil'}
 };
 const shareUrl=(id,key)=>location.origin+location.pathname+'#s='+id+'.'+key;
