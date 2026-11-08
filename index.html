@@ -701,7 +701,7 @@ function shareCurrent(){
     toast('このブラウザはファイルの共有に対応していません。「画像として保存」をご利用ください');
   }).catch(()=>toast('画像の作成に失敗しました'));
 }
-$('share').onclick=openShare;
+$('share').onclick=()=>openShare(false);
 $('save').onclick=()=>{canvas.discardActiveObject();canvas.renderAll();const a=document.createElement('a');a.href=canvas.toDataURL({format:'png',multiplier:2});a.download=($('title').value.trim()||'無題')+'.png';a.click()};
 
 function makeBrush(){
