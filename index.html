@@ -302,6 +302,7 @@ body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{dis
 .shr .opt i{font-size:20px;margin-top:1px}
 .shr .opt b{display:block;font-weight:600}
 .shr .opt span{color:var(--muted);font-size:12px}
+.shr .opt .rec{font-style:normal;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:10px;padding:0 6px;margin-left:6px;vertical-align:1px}
 .shr .lk{margin-top:10px}
 .shr .lk label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
 .shr .lk div{display:flex;gap:6px}
@@ -833,7 +834,15 @@ function shareCurrent(){
   }).catch(()=>toast('画像の作成に失敗しました'));
 }
 $('share').onclick=()=>openShare(false);
-$('save').onclick=()=>{canvas.discardActiveObject();canvas.renderAll();const a=document.createElement('a');a.href=canvas.toDataURL({format:'png',multiplier:2});a.download=($('title').value.trim()||'無題')+'.png';a.click()};
+$('save').onclick=async()=>{
+  const f=await pickSaveFormat();
+  if(!f)return;
+  canvas.discardActiveObject();canvas.renderAll();
+  try{
+    const png=await fetch(canvas.toDataURL({format:'png',multiplier:2})).then(r=>r.blob());
+    downloadBlob(await encodeImage(png,f),fileName({title:$('title').value.trim()},f.ext));
+  }catch(e){toast('画像の作成に失敗しました')}
+};
 
 function makeBrush(){
   if(tool==='eraser'){const b=new fabric.PencilBrush(canvas);hookEraser(b);return b}
@@ -1520,7 +1529,90 @@ async function renderPng(id){
   sc.dispose();
   return fetch(url).then(r=>r.blob());
 }
-const fileName=m=>((m.title||'無題').replace(/[\\/:*?"<>|]/g,'_'))+'.png';
+const fileName=(m,ext)=>((m.title||'無題').replace(/[\\/:*?"<>|]/g,'_'))+'.'+ext;
+const webpOk=document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp');
+const FORMATS=[
+  {k:'png',l:'PNG',d:'劣化がなく、透明も保てます。通常はこちらがおすすめです。',mime:'image/png',ext:'png',rec:true},
+  {k:'jpeg',l:'JPEG',d:'ファイルサイズが小さくなります。透明な部分は白になります。',mime:'image/jpeg',ext:'jpg'}
+];
+if(webpOk)FORMATS.push({k:'webp',l:'WebP',d:'小さく高画質で、透明も保てます。対応していないソフトもあります。',mime:'image/webp',ext:'webp'});
+let saveOpt={fmt:'png',q:.92};
+try{
+  const o=JSON.parse(localStorage.getItem('saveFmt'));
+  if(o&&FORMATS.some(f=>f.k===o.fmt))saveOpt={fmt:o.fmt,q:Math.min(1,Math.max(.1,+o.q||.92))};
+}catch(e){}
+function downloadBlob(b,name){
+  const u=URL.createObjectURL(b),a=document.createElement('a');
+  a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);
+}
+async function encodeImage(png,f){
+  if(f.k==='png')return png;
+  const bmp=await createImageBitmap(png);
+  const c=document.createElement('canvas');c.width=bmp.width;c.height=bmp.height;
+  const x=c.getContext('2d');
+  if(f.k==='jpeg'){x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height)}
+  x.drawImage(bmp,0,0);
+  if(bmp.close)bmp.close();
+  return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('encode')),f.mime,f.q));
+}
+function pickSaveFormat(){
+  return new Promise(res=>{
+    const prev=document.activeElement;
+    let fmt=saveOpt.fmt,q=saveOpt.q;
+    const ov=document.createElement('div');ov.id='modal';
+    const box=document.createElement('div');box.className='mbox shr';
+    box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label','画像として保存');
+    const h=document.createElement('h3');h.textContent='画像として保存';
+    const note=document.createElement('p');note.className='note';note.textContent='保存する画像の形式を選んでください。';
+    const group=document.createElement('div');group.setAttribute('role','radiogroup');
+    const qrow=document.createElement('div');qrow.className='mrowx';
+    qrow.innerHTML='<label for="svq">画質</label><input type="range" id="svq" min="10" max="100" step="1"><span id="svqv" style="width:40px;text-align:right;color:var(--muted)"></span>';
+    const row=document.createElement('div');row.className='mrow';row.style.marginTop='14px';
+    const cancel=document.createElement('button');cancel.textContent='キャンセル';
+    const ok=document.createElement('button');ok.className='ok';ok.textContent='保存';
+    row.append(cancel,ok);
+    const opts=FORMATS.map(f=>{
+      const b=document.createElement('button');b.className='opt';b.setAttribute('role','radio');
+      b.innerHTML='<i class="ti ti-photo" aria-hidden="true"></i><div><b></b><span></span></div>';
+      b.querySelector('b').textContent=f.l;
+      if(f.rec){const r=document.createElement('em');r.className='rec';r.textContent='おすすめ';b.querySelector('b').appendChild(r)}
+      b.querySelector('span').textContent=f.d;
+      b.onclick=()=>{fmt=f.k;sync()};
+      group.appendChild(b);
+      return[f,b];
+    });
+    const slider=qrow.querySelector('#svq'),val=qrow.querySelector('#svqv');
+    slider.value=Math.round(q*100);
+    slider.oninput=()=>{q=slider.value/100;val.textContent=slider.value+'%'};
+    function sync(){
+      opts.forEach(([f,b])=>{b.classList.toggle('on',f.k===fmt);b.setAttribute('aria-checked',String(f.k===fmt))});
+      qrow.hidden=fmt==='png';
+      val.textContent=slider.value+'%';
+    }
+    box.append(h,note,group,qrow,row);
+    ov.appendChild(box);
+    const finish=v=>{ov.remove();try{prev&&prev.focus&&prev.focus()}catch(e){}res(v)};
+    cancel.onclick=()=>finish(null);
+    ok.onclick=()=>{
+      saveOpt={fmt,q};
+      try{localStorage.setItem('saveFmt',JSON.stringify(saveOpt))}catch(e){}
+      finish({...FORMATS.find(f=>f.k===fmt),q});
+    };
+    ov.addEventListener('mousedown',e=>{if(e.target===ov)finish(null)});
+    ov.addEventListener('keydown',e=>{
+      e.stopPropagation();
+      if(e.key==='Escape'){e.preventDefault();finish(null)}
+      else if(e.key==='Tab'){
+        const fs=[...box.querySelectorAll('button,input')].filter(x=>!x.closest('[hidden]'));
+        const i=fs.indexOf(document.activeElement);
+        e.preventDefault();fs[(i+(e.shiftKey?-1:1)+fs.length)%fs.length].focus();
+      }
+    });
+    sync();
+    document.body.appendChild(ov);
+    ok.focus();
+  });
+}
 
 function uiDialog({msg,input,value,ok='OK',cancel='キャンセル',danger}){
   return new Promise(res=>{
@@ -1562,11 +1654,11 @@ async function renameDrawing(m){
   try{await putMeta({...m,title:v.trim().slice(0,40)})}catch(e){toast('保存に失敗しました')}
   renderHome();
 }
-function downloadDrawing(m){
-  renderPng(m.id).then(b=>{
-    const u=URL.createObjectURL(b),a=document.createElement('a');
-    a.href=u;a.download=fileName(m);a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);
-  }).catch(()=>toast('画像の作成に失敗しました'));
+async function downloadDrawing(m){
+  const f=await pickSaveFormat();
+  if(!f)return;
+  try{downloadBlob(await encodeImage(await renderPng(m.id),f),fileName(m,f.ext))}
+  catch(e){toast('画像の作成に失敗しました')}
 }
 async function shareDrawing(m){
   if(!await openDrawing(m.id,true))return;
