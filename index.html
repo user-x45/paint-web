@@ -293,6 +293,7 @@ body.ro #msheet [data-act]:not([data-act="save"]):not([data-act="export"]){displ
 body.guest #share,body.guest #pimp{display:none!important}
 body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{display:none}
 .shr{width:min(460px,100%);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;padding-bottom:0}
+.shr .acts{position:sticky;bottom:0;background:var(--panel);margin:4px -20px 0;padding:10px 20px 20px}
 .shr .mrow{position:sticky;bottom:0;background:var(--panel);padding:10px 0 20px}
 .shr h3{margin:0 0 6px;font-size:16px;font-weight:600}
 .shr .note{margin:0 0 12px;color:var(--muted);font-size:12px}
@@ -316,7 +317,7 @@ body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{dis
 .shr .lk input{flex:1;min-width:0;margin:0;font-size:12px}
 .shr .lk button,.shr .acts button{font:inherit;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;white-space:nowrap}
 .shr .lk button:hover,.shr .acts button:hover{background:var(--hover)}
-.shr .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.shr .acts{display:flex;flex-wrap:wrap;gap:6px}
 .shr .acts .danger{color:#d13438;border-color:#d13438}
 .shr .acts .sp{flex:1}
 @media (max-width:720px),(pointer:coarse) and (max-height:500px){
