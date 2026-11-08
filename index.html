@@ -231,9 +231,9 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .mfont .n{font-size:10px;color:var(--muted)}
 @media (max-width:720px){
 #home{padding:16px 14px 28px}
-.hhead{gap:10px;margin-bottom:16px}
+.hhead{gap:10px;margin-bottom:16px;align-items:stretch}
 .hhead h1{flex:1 0 100%;font-size:24px;letter-spacing:.02em}
-.hhead .pbtn{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:76px;padding:10px 6px;font-size:12px;line-height:1.3;text-align:center;border-radius:12px}
+.hhead .pbtn{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:76px;padding:10px 4px;font-size:clamp(10px,3.1vw,12px);line-height:1.3;text-align:center;white-space:nowrap;border-radius:12px}
 .hhead .pbtn i{margin:0;font-size:24px}
 .sub{font-size:12px;margin:0 0 10px}
 #grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -254,7 +254,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
     <h1>ペイント</h1>
     <button class="pbtn" id="homeNew"><i class="ti ti-plus" aria-hidden="true"></i>新規作成</button>
     <button class="pbtn sec" id="homeImg"><i class="ti ti-photo-plus" aria-hidden="true"></i>画像から新規作成</button>
-    <button class="pbtn sec" id="homePrj"><i class="ti ti-file-import" aria-hidden="true"></i>ファイルを読み込む</button>
+    <button class="pbtn sec" id="homePrj"><i class="ti ti-file-import" aria-hidden="true"></i>ファイルを開く</button>
   </div>
   <p class="sub">保存した絵（このブラウザに自動保存されています）</p>
   <div id="grid"></div>
