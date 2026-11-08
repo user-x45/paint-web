@@ -349,7 +349,7 @@ body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{dis
 }
 @media (pointer:coarse){input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]),select,textarea{font-size:16px!important}.shr .lk input{height:44px}.shr .lk button,.shr .acts button,.mrow button{min-height:44px}.shr .acts{gap:8px}.shr .opt{min-height:44px}}
 html{-webkit-tap-highlight-color:transparent}
-.empty{text-wrap:balance;word-break:auto-phrase;line-height:1.7}
+.empty{line-height:1.7}.empty span{display:inline-block}
 .card{transition:border-color .15s,box-shadow .15s}
 .card:active{transform:scale(.98)}
 #mdock button,.pbtn,.mrow button,.shr .opt,.shr .acts button,.shr .lk button{transition:background-color .12s,transform .12s}
@@ -364,7 +364,7 @@ html{-webkit-tap-highlight-color:transparent}
 #toast{animation:mfade .15s ease-out}
 @media (pointer:coarse),(max-width:720px){#mdock button{font-size:11px}#toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-.htitle #homeInstall{margin-left:auto}.htitle #homeInstall+#homeAbout{margin-left:0}#homeInstall[hidden]{display:none}
+.htitle #homeInstall{margin-left:auto}.htitle #homeInstall:not([hidden])+#homeAbout{margin-left:0}#homeInstall[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -380,7 +380,7 @@ html{-webkit-tap-highlight-color:transparent}
   </div>
   <div class="subrow"><p class="sub" id="subtxt">保存した絵（このブラウザに自動保存されています）</p><div class="selacts"><button class="pbtn sec sm" id="homeSel"><i class="ti ti-checkbox" aria-hidden="true"></i>選択</button><button class="pbtn sec sm" id="selAll" hidden>すべて選択</button><button class="pbtn sm danger" id="selDel" hidden></button><button class="pbtn sec sm" id="selCancel" hidden>キャンセル</button></div></div>
   <div id="grid"></div>
-  <div class="empty" id="empty" hidden>まだ絵がありません。「新規作成」から描き始めましょう。</div>
+  <div class="empty" id="empty" hidden><span>まだ絵がありません。</span><span>「新規作成」から描き始めましょう。</span></div>
 </div>
 
 <div id="editor" hidden>
