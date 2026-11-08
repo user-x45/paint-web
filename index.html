@@ -364,6 +364,7 @@ html{-webkit-tap-highlight-color:transparent}
 #toast{animation:mfade .15s ease-out}
 @media (pointer:coarse),(max-width:720px){#mdock button{font-size:11px}#toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.htitle #homeInstall{margin-left:auto}.htitle #homeInstall+#homeAbout{margin-left:0}#homeInstall[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -372,7 +373,7 @@ html{-webkit-tap-highlight-color:transparent}
 
 <div id="home">
   <div class="hhead">
-    <div class="htitle"><h1><img class="logo" src="favicon/96.png" alt="" width="28" height="28">ペイント</h1><button class="ib" id="homeAbout" title="このアプリについて" aria-label="このアプリについて" data-ic="info"></button></div>
+    <div class="htitle"><h1><img class="logo" src="favicon/96.png" alt="" width="28" height="28">ペイント</h1><button class="ib" id="homeInstall" title="アプリとしてインストール" aria-label="アプリとしてインストール" hidden><i class="ti ti-download" aria-hidden="true"></i></button><button class="ib" id="homeAbout" title="このアプリについて" aria-label="このアプリについて" data-ic="info"></button></div>
     <button class="pbtn" id="homeNew"><i class="ti ti-plus" aria-hidden="true"></i>新規作成</button>
     <button class="pbtn sec" id="homeImg"><i class="ti ti-photo-plus" aria-hidden="true"></i>画像から新規作成</button>
     <button class="pbtn sec" id="homePrj"><i class="ti ti-file-import" aria-hidden="true"></i>ファイルを開く</button>
@@ -2085,6 +2086,22 @@ function showAbout(){
   document.body.appendChild(ov);ok.focus();
 }
 $('homeAbout').onclick=showAbout;
+let installEvt=null;
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function updateInstall(){$('homeInstall').hidden=isStandalone()||!(installEvt||isIOS)}
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;updateInstall()});
+addEventListener('appinstalled',()=>{installEvt=null;updateInstall();toast('インストールしました')});
+$('homeInstall').onclick=async()=>{
+  if(installEvt){
+    const e=installEvt;installEvt=null;
+    try{e.prompt();await e.userChoice}catch(err){}
+    updateInstall();
+    return;
+  }
+  uiAlert('ブラウザの共有ボタン（□に↑のマーク）を押して、「ホーム画面に追加」を選んでください。');
+};
+updateInstall();
 
 const PEN_NAMES={pen:'ペン',pencil:'鉛筆',fine:'細ペン',marker:'マーカー',highlighter:'蛍光ペン',dashed:'点線',neon:'ネオン',spray:'スプレー',dots:'点描'};
 const SHAPE_NAMES={line:'直線',arrow:'矢印',dblarrow:'双方向矢印',rect:'四角形',roundrect:'角丸四角形',ellipse:'楕円',triangle:'三角形',diamond:'ひし形',pentagon:'五角形',hexagon:'六角形',star:'星',heart:'ハート',bubble:'吹き出し',cross:'十字'};
