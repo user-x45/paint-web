@@ -146,6 +146,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 #menu button:hover,#menu button:focus-visible{background:var(--hover)}
 #menu button.danger{color:#d13438}
 #menu button i{margin-right:8px;font-size:16px;vertical-align:-2px}
+#menu button.ni{padding-left:36px}
 #menu button:disabled{opacity:.4;cursor:default}
 #menu button:disabled:hover{background:none}
 #menu .msep{height:1px;background:var(--line);margin:4px 0}
@@ -1078,7 +1079,7 @@ addEventListener('keydown',e=>{
   const ae=document.activeElement;if(ae&&(ae.tagName==='INPUT'||ae.tagName==='SELECT'))return;
   const ao=canvas.getActiveObject();if(ao&&ao.isEditing)return;
   const k=e.key.toLowerCase(),mod=e.ctrlKey||e.metaKey;
-  if(e.key==='Delete')$('del').click();
+  if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();$('del').click()}
   else if(mod&&k==='z'){e.preventDefault();(e.shiftKey?$('redo'):$('undo')).click()}
   else if(mod&&k==='y'){e.preventDefault();$('redo').click()}
   else if(!mod&&!e.altKey){
@@ -1437,13 +1438,10 @@ function downloadDrawing(m){
     a.href=u;a.download=fileName(m);a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);
   }).catch(()=>toast('画像の作成に失敗しました'));
 }
-function shareDrawing(m){
-  renderPng(m.id).then(b=>{
-    const f=new File([b],fileName(m),{type:'image/png'});
-    if(navigator.canShare&&navigator.canShare({files:[f]}))
-      return navigator.share({files:[f],title:m.title||'無題'}).catch(e=>{if(e.name!=='AbortError')toast('共有できませんでした')});
-    toast('このブラウザはファイルの共有に対応していません。「画像として保存」をご利用ください');
-  }).catch(()=>toast('画像の作成に失敗しました'));
+async function shareDrawing(m){
+  await openDrawing(m.id);
+  await idle();
+  if(curId===m.id)openShare();
 }
 async function copyDrawing(m){
   try{
@@ -1470,9 +1468,11 @@ function openMenu(btn,m){
   closeMenu();if(was)return;
   btn.classList.add('open');
   const menu=document.createElement('div');menu.id='menu';menu.setAttribute('role','menu');
-  [['名前を変更',renameDrawing],['画像として保存',downloadDrawing],['ファイルに書き出し',exportSaved],['共有',shareDrawing],['コピー',copyDrawing],['削除',deleteDrawing,1]].forEach(([l,fn,danger])=>{
-    const b=document.createElement('button');b.textContent=l;b.setAttribute('role','menuitem');
-    if(danger)b.className='danger';
+  [['名前を変更',renameDrawing],['画像として保存',downloadDrawing,0,'download'],['ファイルに書き出し',exportSaved],['共有',shareDrawing,0,'share'],['コピー',copyDrawing],['削除',deleteDrawing,1]].forEach(([l,fn,danger,icon])=>{
+    const b=document.createElement('button');b.setAttribute('role','menuitem');
+    if(icon){const i=document.createElement('i');i.className='ti ti-'+icon;i.setAttribute('aria-hidden','true');b.append(i,l)}
+    else{b.textContent=l;b.classList.add('ni')}
+    if(danger)b.classList.add('danger');
     b.onclick=e=>{e.stopPropagation();closeMenu();fn(m)};
     menu.appendChild(b);
   });
@@ -2375,6 +2375,14 @@ function openShare(){
     if(cloud&&cloud.mode==='view')addLink('閲覧用リンク（見るだけ）',shareUrl(cloud.id,cloud.editKey));
     const acts=document.createElement('div');acts.className='acts';
     acts.appendChild(btn('画像として共有',()=>{close();shareCurrent()}));
+    const linked=!!cloud&&cloud.mode!=='private';
+    const cb=btn('Classroomで共有',()=>{
+      const u='https://classroom.google.com/share?url='+encodeURIComponent(shareUrl(cloud.id,cloud.editKey))+'&title='+encodeURIComponent($('title').value.trim()||'無題');
+      window.open(u,'_blank','noopener');
+    });
+    cb.disabled=working||!linked;
+    if(!linked)cb.title='閲覧者か編集者を選ぶと使えます';
+    acts.appendChild(cb);
     if(cloud){
       acts.appendChild(btn('リンクを再発行',rotate));
     }
