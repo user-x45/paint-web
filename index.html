@@ -16,6 +16,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<script src="config.js"></script>
 <style>
 :root{--bg:#f3f3f3;--panel:#fbfbfb;--ink:#1b1b1b;--muted:#5d5d5d;--line:#e0e0e0;--hover:#ececec;--sel:#d6e8f8;--accent:#0067c0;--desk:#e9e9e9;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -256,6 +257,29 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .card .meta b{font-size:13px}
 .empty{text-align:center;padding:40px 12px}
 }
+body.ro .ribbon,body.ro #mdock,body.ro #lpanel,body.ro #lbtn,body.ro .mtop:not(#mmore),body.ro .dtop,body.ro #share,body.ro #tbToggle{display:none!important}
+body.ro #msheet [data-act]:not([data-act="save"]){display:none}
+body.guest #share,body.guest #pimp{display:none!important}
+body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{display:none}
+.shr{width:min(460px,100%);max-height:calc(100vh - 32px);overflow:auto}
+.shr h3{margin:0 0 6px;font-size:16px;font-weight:600}
+.shr .note{margin:0 0 12px;color:var(--muted);font-size:12px}
+.shr .opt{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:10px 12px;margin:0 0 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer}
+.shr .opt:hover:not(:disabled){background:var(--hover)}
+.shr .opt:disabled{opacity:.6;cursor:default}
+.shr .opt.on{border-color:var(--accent);background:var(--sel)}
+.shr .opt i{font-size:20px;margin-top:1px}
+.shr .opt b{display:block;font-weight:600}
+.shr .opt span{color:var(--muted);font-size:12px}
+.shr .lk{margin-top:10px}
+.shr .lk label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
+.shr .lk div{display:flex;gap:6px}
+.shr .lk input{flex:1;min-width:0;margin:0;font-size:12px}
+.shr .lk button,.shr .acts button{font:inherit;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;white-space:nowrap}
+.shr .lk button:hover,.shr .acts button:hover{background:var(--hover)}
+.shr .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.shr .acts .danger{color:#d13438;border-color:#d13438}
+.shr .acts .sp{flex:1}
 </style>
 </head>
 <body>
@@ -423,6 +447,7 @@ let penType='pen';
 const hexA=(c,a)=>{const h=c.replace('#','');const n=parseInt(h.length===3?h.replace(/./g,'$&$&'):h,16);return 'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')'};
 let tool='pen',fg='#000000',bg='#ffffff',target='fg',lw=4,drawing=null,start=null,hist=[],redoS=[],busy=false,layers=[],activeLayer=null;
 let curId=null,curCreated=0,dirty=false,saveTimer=null,chain=Promise.resolve();
+let cloud=null,ro=false,pulling=false;
 const hints={select:'オブジェクトをクリックして移動・変形します。選択中に色を選ぶと、図形・文字・線の色が変わります。',eraser:'ドラッグで選択中のレイヤーの絵を消します。図形はクリックで削除。',pen:'ドラッグで自由に描きます。ペンの種類を切り替えられます。',text:'キャンバスをクリックして文字を入力します。もう一度「文字」を押すとフォントなどを変更できます。',line:'ドラッグで直線を描きます。',arrow:'ドラッグで矢印を描きます。',rect:'ドラッグで四角形を描きます。',ellipse:'ドラッグで楕円を描きます。'};
 const CW=1152,CH=648;
 const ZMIN=0.1,ZMAX=8;
@@ -608,19 +633,35 @@ $('lw').oninput=e=>setLw(+e.target.value);
 $('mlw').oninput=e=>setLw(+e.target.value);
 
 function setSaved(t){$('saved').textContent=t}
-function scheduleSave(){if(!curId)return;dirty=true;setSaved('自動保存: 変更あり…');clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,500)}
+function scheduleSave(){if(!curId||ro)return;dirty=true;setSaved('自動保存: 変更あり…');clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,500)}
 function saveNow(){clearTimeout(saveTimer);chain=chain.then(doSave);return chain}
+const currentPayload=()=>({w:canvas.width,h:canvas.height,c:canvas.toJSON(),layers:layers.map(l=>({...l})),active:activeLayer});
+const thumbNow=()=>canvas.toDataURL({format:'png',multiplier:Math.min(1,360/canvas.width)});
+const cloudMeta=()=>cloud&&cloud.owner?{id:cloud.id,ownerKey:cloud.ownerKey,viewKey:cloud.viewKey,editKey:cloud.editKey,mode:cloud.mode,rev:cloud.rev}:undefined;
+const persistLocal=(id,created,title,payload,thumb,now)=>putDrawing({id,title,created,updated:now,thumb,cloud:cloudMeta()},{id,...payload});
+async function persistLocalNow(){
+  await persistLocal(curId,curCreated,$('title').value.trim(),currentPayload(),thumbNow(),Date.now());
+}
 async function doSave(){
-  if(!curId||busy||!dirty)return;
+  if(!curId||busy||!dirty||ro)return;
   const id=curId,created=curCreated;
+  let remoteFail=false;
   try{
-    const w=canvas.width,h=canvas.height;
-    const c=canvas.toJSON(),ly=layers.map(l=>({...l})),ac=activeLayer;
-    const thumb=canvas.toDataURL({format:'png',multiplier:Math.min(1,360/w)});
-    const now=Date.now();
+    const payload=currentPayload(),thumb=thumbNow(),now=Date.now(),title=$('title').value.trim();
     dirty=false;
-    await putDrawing({id,title:$('title').value.trim(),created,updated:now,thumb},{id,w,h,c,layers:ly,active:ac});
-    setSaved('自動保存: '+fmt(now).slice(-5)+' 保存済み');
+    if(cloud&&cloud.role!=='view'){
+      try{await pushCloud(title,payload)}
+      catch(e){
+        if(e.status===409){if(!await onConflict(title,payload))return}
+        else if(e.status===403||e.status===404){handleRevoked();return}
+        else remoteFail=true;
+      }
+    }
+    if(!cloud||cloud.owner)await persistLocal(id,created,title,payload,thumb,now);
+    if(remoteFail){
+      dirty=true;clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,8000);
+      setSaved(cloud.owner?'自動保存: 端末に保存済み（サーバー未同期・再試行中）':'自動保存: サーバーに保存できません。再試行中…');
+    }else setSaved('自動保存: '+fmt(now).slice(-5)+' 保存済み'+(cloud?'（同期済み）':''));
   }catch(e){
     dirty=true;setSaved('自動保存に失敗しました（容量不足の可能性）');
   }
@@ -630,7 +671,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)saveNow()})
 $('title').oninput=()=>{document.title='ペイント - '+($('title').value.trim()||'無題');scheduleSave()};
 
 function snapshot(){return JSON.stringify({c:canvas.toJSON(),layers:layers,active:activeLayer})}
-function snap(){if(busy)return;hist.push(snapshot());if(hist.length>60)hist.shift();redoS=[];scheduleSave()}
+function snap(){if(busy||ro)return;hist.push(snapshot());if(hist.length>60)hist.shift();redoS=[];scheduleSave()}
 function load(s){
   const o=JSON.parse(s);
   layers=o.layers.map(l=>({...l}));activeLayer=o.active;
@@ -652,7 +693,7 @@ function shareCurrent(){
     toast('このブラウザはファイルの共有に対応していません。「画像として保存」をご利用ください');
   }).catch(()=>toast('画像の作成に失敗しました'));
 }
-$('share').onclick=shareCurrent;
+$('share').onclick=openShare;
 $('save').onclick=()=>{canvas.discardActiveObject();canvas.renderAll();const a=document.createElement('a');a.href=canvas.toDataURL({format:'png',multiplier:2});a.download=($('title').value.trim()||'無題')+'.png';a.click()};
 
 function makeBrush(){
@@ -676,6 +717,8 @@ function applyBrush(){
   if(t.spray){b.density=Math.max(10,lw*4);b.dotWidth=Math.max(1,lw/3);b.dotWidthVariance=Math.max(1,lw/4);b.randomOpacity=true;b.optimizeOverlapping=true}
 }
 function setTool(t){
+  if(ro){canvas.isDrawingMode=false;canvas.selection=false;canvas.skipTargetFind=true;canvas.defaultCursor='default';return}
+  canvas.skipTargetFind=false;
   tool=t;
   document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   canvas.selection=(t==='select');
@@ -1280,6 +1323,7 @@ function resetTools(){
 function showEditor(){resetTools();closeSheet();setPanel(false);$('home').hidden=true;$('editor').hidden=false;zoom=1;$('desk').scrollLeft=0;$('desk').scrollTop=0;fitRibbon();document.title='ペイント - '+($('title').value||'無題')}
 function resetHist(){hist=[snapshot()];redoS=[]}
 function newDrawing(){
+  cloud=null;applyRole();
   curId=uid();curCreated=Date.now();dirty=false;
   $('title').value='';setSaved('自動保存: 描くと保存されます');
   showEditor();
@@ -1294,6 +1338,8 @@ async function openDrawing(id){
   }catch(e){uiAlert('データを読み込めませんでした。');return}
   if(!m||!d){uiAlert('この絵のデータが見つかりません。');renderHome();return}
   curId=id;curCreated=m.created||Date.now();dirty=false;
+  cloud=m.cloud?{id:m.cloud.id,key:m.cloud.ownerKey,ownerKey:m.cloud.ownerKey,viewKey:m.cloud.viewKey,editKey:m.cloud.editKey,mode:m.cloud.mode,rev:m.cloud.rev,role:'owner',owner:true}:null;
+  applyRole();
   $('title').value=m.title||'';setSaved('自動保存: 保存済み');
   showEditor();
   layers=normalizeLayers(d.layers||[],d.c&&d.c.background);
@@ -1308,7 +1354,8 @@ async function openDrawing(id){
 async function goHome(){
   canvas.discardActiveObject();
   await saveNow();
-  curId=null;
+  curId=null;cloud=null;applyRole();
+  if(parseShare())history.replaceState(null,'',location.pathname+location.search);
   $('editor').hidden=true;$('home').hidden=false;document.title='ペイント';
   renderHome();
 }
@@ -1395,7 +1442,7 @@ async function copyDrawing(m){
     const d=await getData(m.id);
     if(!d){uiAlert('この絵のデータが見つかりません。');return}
     const id=uid(),now=Date.now();
-    await putDrawing({...m,id,title:((m.title||'無題')+' のコピー').slice(0,40),created:now,updated:now},{...d,id});
+    await putDrawing({...m,id,cloud:undefined,title:((m.title||'無題')+' のコピー').slice(0,40),created:now,updated:now},{...d,id});
     renderHome();toast('コピーを作成しました');
   }catch(e){
     uiAlert('コピーできませんでした。保存容量が不足している可能性があります。');
@@ -1403,6 +1450,10 @@ async function copyDrawing(m){
 }
 async function deleteDrawing(m){
   if(!await uiConfirm('「'+(m.title||'無題')+'」を削除しますか？\nこの操作は元に戻せません。',{ok:'削除',danger:true}))return;
+  if(m.cloud){
+    try{await api('DELETE','/api/d/'+m.cloud.id,{key:m.cloud.ownerKey})}
+    catch(e){if(e.status!==404&&e.status!==403){toast('サーバー上の共有を停止できなかったため、削除しませんでした');return}}
+  }
   try{await delDrawing(m.id)}catch(err){toast('削除に失敗しました')}
   renderHome();
 }
@@ -1446,7 +1497,7 @@ async function renderHome(){
     const im=document.createElement('img');im.alt='';im.src=m.thumb||'';th.appendChild(im);
     const meta=document.createElement('div');meta.className='meta';
     const t=document.createElement('b');t.textContent=m.title||'無題';
-    const s=document.createElement('span');s.textContent=fmt(m.updated);
+    const s=document.createElement('span');s.textContent=fmt(m.updated)+(m.cloud?' ・ '+MODES[m.cloud.mode].l:'');
     meta.append(t,s);
     const x=document.createElement('button');x.className='x';x.innerHTML=ic('more');x.title='その他';
     x.setAttribute('aria-label','その他の操作');x.setAttribute('aria-haspopup','menu');
@@ -1747,7 +1798,268 @@ $('mimg').onclick=()=>$('imgBtn').click();
 $('mdel').onclick=()=>$('del').click();
 addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 updateMobile();syncMobileColor();
+const API=(window.PAINT_API||'').replace(/\/+$/,'');
+const hasApi=!!API&&!/YOUR_/.test(API);
+async function api(method,path,o={}){
+  if(!hasApi)throw new Error('no_api');
+  const url=API+path+(o.query?'?'+new URLSearchParams(o.query):'');
+  const headers={};
+  if(o.key)headers.authorization='Bearer '+o.key;
+  if(o.body!=null)headers['content-type']='application/json';
+  const r=await fetch(url,{method,headers,body:o.body});
+  let j=null;
+  try{j=await r.json()}catch(e){}
+  if(!r.ok){
+    const e=new Error((j&&j.error)||'http_'+r.status);
+    e.status=r.status;e.body=j;
+    throw e;
+  }
+  return j;
+}
+function errMsg(e){
+  if(e.message==='no_api')return '共有サーバーが未設定です（config.js の PAINT_API を設定してください）';
+  if(e.status===413)return 'データが大きすぎます（8MBまで）';
+  if(e.status===404)return 'この共有は見つかりません。削除された可能性があります。';
+  if(e.status===403)return e.message==='private'?'この絵は「自分のみ」に設定されています。':'アクセス権がありません。リンクが正しいか確認してください。';
+  return 'サーバーに接続できませんでした。';
+}
+const MODES={
+  private:{l:'自分のみ',d:'あなただけが開けます。サーバーにバックアップされます。',i:'lock'},
+  view:{l:'閲覧者',d:'リンクを知っている人は見るだけできます。',i:'eye'},
+  edit:{l:'編集者',d:'リンクを知っている人は編集もできます。',i:'pencil'}
+};
+const shareUrl=(id,key)=>location.origin+location.pathname+'#s='+id+'.'+key;
+function parseShare(){
+  const m=/^#s=([A-Za-z0-9_-]{12})\.([A-Za-z0-9_-]{16,64})$/.exec(location.hash);
+  return m?{id:m[1],key:m[2]}:null;
+}
+
+function applyRole(){
+  const was=ro;
+  ro=!!cloud&&cloud.role==='view';
+  document.body.classList.toggle('ro',ro);
+  document.body.classList.toggle('guest',!!cloud&&!cloud.owner);
+  $('title').readOnly=ro;
+  if(ro){
+    tool='select';
+    canvas.isDrawingMode=false;canvas.selection=false;canvas.skipTargetFind=true;canvas.defaultCursor='default';
+    canvas.discardActiveObject();canvas.requestRenderAll();
+    $('hint').textContent='閲覧専用です。編集はできません。';
+    setSaved('共有リンクで閲覧中');
+  }else{
+    canvas.skipTargetFind=false;
+    if(was&&curId){setTool('pen');setSaved(cloud?'共有リンクで編集中':'自動保存: 保存済み')}
+  }
+}
+['keydown','paste','cut','drop','contextmenu'].forEach(t=>addEventListener(t,e=>{
+  if(!ro||(t==='keydown'&&(e.key==='Escape'||e.ctrlKey||e.metaKey)))return;
+  e.stopImmediatePropagation();
+  if(t!=='keydown')e.preventDefault();
+},true));
+
+function applyData(d,done){
+  layers=normalizeLayers(d.layers||[],d.c&&d.c.background);
+  activeLayer=layers.some(l=>l.id===d.active)?d.active:layers[layers.length-1].id;
+  busy=true;
+  canvas.loadFromJSON(d.c,()=>{
+    setSize(CW,CH);
+    busy=false;renderLayers();resetHist();setTool(tool);
+    loadUsedFonts(canvas.getObjects()).then(r=>{if(r)canvas.requestRenderAll()});
+    if(done)done();
+  });
+}
+
+async function pushCloud(title,payload,force){
+  const r=await api('PUT','/api/d/'+cloud.id,{key:cloud.key,query:{title,rev:cloud.rev,force:force?1:0},body:JSON.stringify(payload)});
+  cloud.rev=r.rev;
+}
+async function onConflict(title,payload){
+  const keep=await uiDialog({msg:'他の人がこの絵を先に更新しています。自分の変更で上書きしますか？',ok:'自分の変更で上書き',cancel:'最新を読み込む'});
+  if(keep){await pushCloud(title,payload,true);return true}
+  await pullCloud();
+  return false;
+}
+async function pullCloud(){
+  if(!cloud||pulling)return;
+  pulling=true;
+  try{
+    const r=await api('GET','/api/d/'+cloud.id,{key:cloud.key});
+    cloud.rev=r.rev;
+    if(!cloud.owner&&r.role!==cloud.role){cloud.role=r.role;applyRole()}
+    if(document.activeElement!==$('title'))$('title').value=r.title||'';
+    document.title='ペイント - '+($('title').value.trim()||'無題');
+    dirty=false;
+    applyData(r.data,()=>{
+      setSaved('最新の内容を読み込みました');
+      if(cloud&&cloud.owner)persistLocalNow().catch(()=>{});
+    });
+  }catch(e){
+    if(e.status===403||e.status===404)handleRevoked();
+  }finally{
+    pulling=false;
+  }
+}
+function handleRevoked(){
+  const guest=cloud&&!cloud.owner;
+  if(guest){
+    cloud=null;dirty=false;
+    uiAlert('この共有は停止されたか、アクセス権が変更されました。').then(()=>{if(curId)goHome()});
+  }else if(cloud){
+    cloud=null;
+    persistLocalNow().catch(()=>{});
+    uiAlert('サーバー上の共有が見つかりません。この絵は共有されていない状態に戻しました。');
+  }
+}
+async function poll(){
+  if(!cloud||!curId||document.hidden||busy||pulling)return;
+  try{
+    const r=await api('GET','/api/d/'+cloud.id+'/rev',{key:cloud.key});
+    if(!cloud.owner&&r.role!==cloud.role){cloud.role=r.role;applyRole()}
+    if(cloud.owner&&r.mode&&r.mode!==cloud.mode){cloud.mode=r.mode}
+    if(r.rev>cloud.rev&&!dirty)await pullCloud();
+  }catch(e){
+    if(e.status===403||e.status===404)handleRevoked();
+  }
+}
+setInterval(poll,8000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll()});
+
+async function openShared(id,key){
+  let r;
+  try{r=await api('GET','/api/d/'+id,{key})}
+  catch(e){await uiAlert(errMsg(e));return}
+  try{
+    const mine=(await listMeta()).find(m=>m.cloud&&m.cloud.id===id);
+    if(mine){await openDrawing(mine.id);return}
+  }catch(e){}
+  cloud={id,key,role:r.role,rev:r.rev,mode:r.mode,owner:false};
+  curId='g'+id;curCreated=Date.now();dirty=false;
+  $('title').value=r.title||'';
+  applyRole();
+  showEditor();
+  applyData(r.data,()=>{
+    setSaved(ro?'共有リンクで閲覧中':'共有リンクで編集中');
+    $('size').textContent=canvas.width+' × '+canvas.height+' px';
+  });
+}
+async function enterFromHash(){
+  const p=parseShare();
+  if(!p||(cloud&&cloud.id===p.id))return;
+  if(curId){canvas.discardActiveObject();await saveNow()}
+  await openShared(p.id,p.key);
+}
+addEventListener('hashchange',enterFromHash);
+
+async function createCloud(mode){
+  canvas.discardActiveObject();
+  const payload=currentPayload(),title=$('title').value.trim();
+  const r=await api('POST','/api/d',{query:{title,mode},body:JSON.stringify(payload)});
+  cloud={id:r.id,key:r.ownerKey,ownerKey:r.ownerKey,viewKey:r.viewKey,editKey:r.editKey,mode:r.mode,rev:r.rev,role:'owner',owner:true};
+  await persistLocalNow();
+}
+
+function openShare(){
+  if(!curId||(cloud&&!cloud.owner))return;
+  canvas.discardActiveObject();canvas.renderAll();
+  const prev=document.activeElement;
+  const ov=document.createElement('div');ov.id='modal';
+  const box=document.createElement('div');box.className='mbox shr';
+  box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
+  ov.appendChild(box);
+  let working=false;
+  const close=()=>{ov.remove();try{prev&&prev.focus&&prev.focus()}catch(e){}};
+  const addLink=(label,url)=>{
+    const w=document.createElement('div');w.className='lk';
+    const l=document.createElement('label');l.textContent=label;
+    const row=document.createElement('div');
+    const inp=document.createElement('input');inp.type='text';inp.readOnly=true;inp.value=url;inp.setAttribute('aria-label',label);
+    inp.onfocus=()=>inp.select();
+    const b=document.createElement('button');b.textContent='コピー';
+    b.onclick=async()=>{
+      try{await navigator.clipboard.writeText(url);toast('リンクをコピーしました')}
+      catch(e){inp.focus();inp.select();toast('選択しました。コピーしてください')}
+    };
+    row.append(inp,b);w.append(l,row);box.appendChild(w);
+  };
+  const choose=async k=>{
+    if(working||(cloud&&cloud.mode===k))return;
+    working=true;render();
+    try{
+      if(!cloud)await createCloud(k);
+      else{
+        const r=await api('PATCH','/api/d/'+cloud.id,{key:cloud.key,body:JSON.stringify({mode:k})});
+        cloud.mode=r.mode;
+        await persistLocalNow();
+      }
+      applyRole();
+    }catch(e){toast(errMsg(e))}
+    working=false;render();
+  };
+  const rotate=async()=>{
+    if(!await uiConfirm('リンクを再発行すると、これまでのリンクは使えなくなります。',{ok:'再発行'}))return;
+    working=true;render();
+    try{
+      const r=await api('PATCH','/api/d/'+cloud.id,{key:cloud.key,body:JSON.stringify({rotate:true})});
+      cloud.viewKey=r.viewKey;cloud.editKey=r.editKey;
+      await persistLocalNow();
+      toast('リンクを再発行しました');
+    }catch(e){toast(errMsg(e))}
+    working=false;render();
+  };
+  const stop=async()=>{
+    if(!await uiConfirm('共有を停止し、サーバー上のデータを削除します。この端末の絵は残ります。',{ok:'停止して削除',danger:true}))return;
+    working=true;render();
+    try{
+      try{await api('DELETE','/api/d/'+cloud.id,{key:cloud.key})}
+      catch(e){if(e.status!==404&&e.status!==403)throw e}
+      cloud=null;
+      await persistLocalNow();
+      applyRole();
+      toast('共有を停止しました');
+    }catch(e){toast(errMsg(e))}
+    working=false;render();
+  };
+  const btn=(text,fn,cls)=>{
+    const b=document.createElement('button');b.textContent=text;if(cls)b.className=cls;
+    b.disabled=working;b.onclick=fn;return b;
+  };
+  function render(){
+    box.innerHTML='';
+    const h=document.createElement('h3');h.textContent='共有';
+    const note=document.createElement('p');note.className='note';
+    note.textContent=working?'処理中…':cloud?'公開範囲を変更できます。変更はすぐ反映されます。':'まだ共有されていません。公開範囲を選ぶと、この絵がサーバーに保存されます。';
+    box.append(h,note);
+    ['private','view','edit'].forEach(k=>{
+      const b=document.createElement('button');
+      b.className='opt'+(cloud&&cloud.mode===k?' on':'');
+      b.disabled=working;
+      b.innerHTML='<i class="ti ti-'+MODES[k].i+'" aria-hidden="true"></i><div><b></b><span></span></div>';
+      b.querySelector('b').textContent=MODES[k].l;
+      b.querySelector('span').textContent=MODES[k].d;
+      b.onclick=()=>choose(k);
+      box.appendChild(b);
+    });
+    if(cloud&&cloud.mode==='edit')addLink('編集用リンク（編集できます）',shareUrl(cloud.id,cloud.editKey));
+    if(cloud&&cloud.mode!=='private')addLink('閲覧用リンク（見るだけ）',shareUrl(cloud.id,cloud.viewKey));
+    const acts=document.createElement('div');acts.className='acts';
+    acts.appendChild(btn('画像として共有',()=>{close();shareCurrent()}));
+    if(cloud){
+      acts.appendChild(btn('リンクを再発行',rotate));
+      acts.appendChild(btn('共有を停止して削除',stop,'danger'));
+    }
+    const sp=document.createElement('span');sp.className='sp';acts.appendChild(sp);
+    acts.appendChild(btn('閉じる',close));
+    box.appendChild(acts);
+  }
+  ov.addEventListener('mousedown',e=>{if(e.target===ov)close()});
+  ov.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();close()}});
+  render();
+  document.body.appendChild(ov);
+  box.querySelector('.opt').focus();
+}
+
 renderHome();
+enterFromHash();
 </script>
 </body>
 </html>
