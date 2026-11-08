@@ -163,6 +163,18 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#323232;color:#fff;padding:9px 16px;border-radius:6px;z-index:60;max-width:90vw}
 .card.new .th{background:var(--desk);color:var(--accent)}
 .empty{color:var(--muted);padding:24px 0}
+.subrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+.subrow .sub{margin:0}
+.selacts{display:flex;gap:8px;flex-wrap:wrap}
+.pbtn.sm{padding:6px 12px;font-size:12px}
+.pbtn.sm i{font-size:14px;margin-right:4px}
+.pbtn.danger{background:#d13438;color:#fff}
+.pbtn:disabled{opacity:.4;cursor:default;filter:none}
+.card .ck{position:absolute;top:6px;left:6px;width:26px;height:26px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center}
+.card .ck i{font-size:16px;opacity:0}
+.card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.card.sel .ck{background:var(--accent);border-color:var(--accent)}
+.card.sel .ck i{opacity:1}
 .ribbon{display:none!important}
 .msw{width:18px;height:18px;border-radius:50%;border:1px solid var(--muted);display:inline-block;flex:none}
 .top{height:48px;flex:none;padding:0 10px}
@@ -297,7 +309,7 @@ body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{dis
     <button class="pbtn sec" id="homeImg"><i class="ti ti-photo-plus" aria-hidden="true"></i>画像から新規作成</button>
     <button class="pbtn sec" id="homePrj"><i class="ti ti-file-import" aria-hidden="true"></i>ファイルを開く</button>
   </div>
-  <p class="sub">保存した絵（このブラウザに自動保存されています）</p>
+  <div class="subrow"><p class="sub" id="subtxt">保存した絵（このブラウザに自動保存されています）</p><div class="selacts"><button class="pbtn sec sm" id="homeSel"><i class="ti ti-checkbox" aria-hidden="true"></i>選択</button><button class="pbtn sec sm" id="selAll" hidden>すべて選択</button><button class="pbtn sm danger" id="selDel" hidden></button><button class="pbtn sec sm" id="selCancel" hidden>キャンセル</button></div></div>
   <div id="grid"></div>
   <div class="empty" id="empty" hidden>まだ絵がありません。「新規作成」から描き始めましょう。</div>
 </div>
@@ -364,7 +376,7 @@ body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{dis
 <div class="mseg"><button class="mbtn" id="mbold"><strong style="font-size:16px">B</strong>太字</button><button class="mbtn" id="mitalic"><em style="font-size:16px;font-weight:600">I</em>斜体</button></div>
 <div class="mrowx"><label for="mts">サイズ</label><input type="range" id="mts" min="8" max="200" value="32"><span id="mtsv">32px</span></div>
 </div>
-<div data-p="shape" hidden><div class="mgrid g4" id="mshapes"></div><div class="mseg" id="mfill"></div></div>
+<div data-p="shape" hidden><div class="mgrid g4" id="mshapes"></div><div class="mseg" id="mfill"></div><div class="mrowx"><label for="mslw">太さ</label><input type="range" id="mslw" min="1" max="40" value="4"><span id="mslwv">4px</span></div></div>
 <div data-p="color" hidden>
 <div class="mseg"><button class="mbtn on" id="mfg"><span class="msw" id="mfgsw" style="background:#000"></span>線・文字</button><button class="mbtn" id="mbg"><span class="msw" id="mbgsw" style="background:#fff"></span>塗り</button></div>
 <div id="mpal"></div>
@@ -387,7 +399,7 @@ body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{dis
 
 <script>
 const $=id=>document.getElementById(id);
-const P={select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out',dblarrow:'ti ti-arrows-horizontal',roundrect:'ti ti-square-rounded',triangle:'ti ti-triangle',diamond:'ti ti-diamond',pentagon:'ti ti-pentagon',hexagon:'ti ti-hexagon',star:'ti ti-star',heart:'ti ti-heart',bubble:'ti ti-message',cross:'ti ti-plus',tofront:'ti ti-arrow-bar-up',forward:'ti ti-arrow-up',backward:'ti ti-arrow-down',toback:'ti ti-arrow-bar-down',copy:'ti ti-copy',paste:'ti ti-clipboard',info:'ti ti-info-circle',fexport:'ti ti-file-export',fimport:'ti ti-file-import'};
+const P={select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out',dblarrow:'ti ti-arrows-horizontal',roundrect:'ti ti-square-rounded',triangle:'ti ti-triangle',diamond:'ti ti-diamond',pentagon:'ti ti-pentagon',hexagon:'ti ti-hexagon',star:'ti ti-star',heart:'ti ti-heart',bubble:'ti ti-message',cross:'ti ti-plus',tofront:'ti ti-arrow-bar-up',forward:'ti ti-arrow-up',backward:'ti ti-arrow-down',toback:'ti ti-arrow-bar-down',copy:'ti ti-copy',paste:'ti ti-clipboard',info:'ti ti-info-circle',check:'ti ti-check',fexport:'ti ti-file-export',fimport:'ti ti-file-import'};
 const ic=n=>'<i class="'+P[n]+'" aria-hidden="true"></i>';
 document.querySelectorAll('[data-ic]').forEach(b=>{b.innerHTML=ic(b.dataset.ic)});
 
@@ -420,7 +432,7 @@ const fmt=t=>{const d=new Date(t);return d.getFullYear()+'/'+(d.getMonth()+1)+'/
 
 fabric.FabricObject.ownDefaults.originX='left';
 fabric.FabricObject.ownDefaults.originY='top';
-fabric.FabricObject.customProperties=['layer','oid'];
+fabric.FabricObject.customProperties=['layer','oid','isShape'];
 const bbox=o=>{o.setCoords();return o.getBoundingRect()};
 const isEraserStroke=o=>o.globalCompositeOperation==='destination-out';
 function makeLayeredRender(getLayers){
@@ -451,7 +463,7 @@ canvas._renderObjects=makeLayeredRender(()=>layers);
 const PENS={pen:{k:1,a:1},pencil:{k:.7,a:.75},fine:{k:.4,a:1},marker:{k:2.5,a:.6,cap:'square'},highlighter:{k:6,a:.3,cap:'square'},dashed:{k:1,a:1,cap:'butt',dash:true},neon:{k:1,a:1,glow:3},spray:{k:3,a:1,spray:true},dots:{k:3,a:1,dots:true}};
 let penType='pen';
 const hexA=(c,a)=>{const h=c.replace('#','');const n=parseInt(h.length===3?h.replace(/./g,'$&$&'):h,16);return 'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')'};
-let tool='pen',fg='#000000',bg='#ffffff',target='fg',lw=4,drawing=null,start=null,hist=[],redoS=[],busy=false,layers=[],activeLayer=null;
+let tool='pen',fg='#000000',bg='#ffffff',target='fg',lw=4,slw=4,widthPending=false,drawing=null,start=null,hist=[],redoS=[],busy=false,layers=[],activeLayer=null;
 let curId=null,curCreated=0,dirty=false,saveTimer=null,chain=Promise.resolve();
 let cloud=null,ro=false,pulling=false,stopped=null;
 let sentMap=new Map(),sentOrder='',sentLayers='',sentTitle='',mine=new Set(),opQ=false,needPull=false,fullFlag=false,opChain=Promise.resolve(),liveSid=null,livePts=[],liveSent=0,liveStyle=null,liveT=null,liveEnds=[],liveDrawQ=false,localT=null;
@@ -771,18 +783,18 @@ function makeShape(t,x0,y0,x1,y1,shift){
     else{const m=Math.max(Math.abs(dx),Math.abs(dy));x1=x0+m*(dx<0?-1:1);y1=y0+m*(dy<0?-1:1)}
   }
   const l=Math.min(x0,x1),tp=Math.min(y0,y1),w=Math.abs(x1-x0),h=Math.abs(y1-y0);
-  const base={stroke:fg,strokeWidth:lw,fill:fillOf(),strokeLineJoin:'round',selectable:false,evented:false};
+  const base={stroke:fg,strokeWidth:slw,fill:fillOf(),strokeLineJoin:'round',selectable:false,evented:false,isShape:true};
   if(t==='rect')return new fabric.Rect({...base,left:l,top:tp,width:w,height:h});
   if(t==='roundrect'){const r=Math.min(w,h)*.2;return new fabric.Rect({...base,left:l,top:tp,width:w,height:h,rx:r,ry:r})}
   if(t==='ellipse')return new fabric.Ellipse({...base,left:l,top:tp,rx:w/2,ry:h/2});
   if(isLine){
     const ln=new fabric.Line([x0,y0,x1,y1],{...base,fill:fg,strokeLineCap:'round'});
     if(t==='line')return ln;
-    const a=Math.atan2(y1-y0,x1-x0),hs=10+lw*2;
+    const a=Math.atan2(y1-y0,x1-x0),hs=10+slw*2;
     const head=(x,y,ang)=>new fabric.Triangle({left:x,top:y,originX:'center',originY:'center',width:hs,height:hs,fill:fg,angle:ang});
     const parts=[ln,head(x1,y1,a*180/Math.PI+90)];
     if(t==='dblarrow')parts.push(head(x0,y0,a*180/Math.PI-90));
-    return new fabric.Group(parts,{selectable:false,evented:false});
+    return new fabric.Group(parts,{selectable:false,evented:false,isShape:true});
   }
   if(POLY[t])return new fabric.Polygon(POLY[t].map(q=>({x:l+q[0]*w,y:tp+q[1]*h})),base);
   const d=CURVES[t].map(c=>c.map((v,k)=>k===0?v:(k%2===1?l+v*w:tp+v*h)).join(' ')).join(' ');
@@ -1079,8 +1091,8 @@ addEventListener('keydown',e=>{
   else if(mod&&k==='y'){e.preventDefault();$('redo').click()}
   else if(!mod&&!e.altKey){
     if(KEYS[k]){closeSheet();setTool(KEYS[k])}
-    else if(k==='[')setLw(Math.max(1,lw-1));
-    else if(k===']')setLw(Math.min(40,lw+1));
+    else if(k==='[')shapes.includes(tool)?setShapeLw(Math.max(1,slw-1)):setLw(Math.max(1,lw-1));
+    else if(k===']')shapes.includes(tool)?setShapeLw(Math.min(40,slw+1)):setLw(Math.min(40,lw+1));
   }
 });
 
@@ -1316,7 +1328,7 @@ $('lbgc').oninput=e=>setBgColor(e.target.value);
 $('lbgc').onchange=()=>snap();
 
 function resetTools(){
-  fg='#000000';bg='#ffffff';setLw(4);
+  fg='#000000';bg='#ffffff';setLw(4);setShapeLw(4,true);
   $('fgb').style.background=fg;$('bgb').style.background=bg;pick('fg');
   $('custom').value='#0067c0';$('mcustom').value='#0067c0';$('fillm').value='outline';penType='pen';$('pent').value='pen';
   textSize=32;textFont=FONTS[0].css;textBold=false;textItalic=false;lastShape='rect';colorPending=false;tbHidden=false;setToolbar(true);
@@ -1488,16 +1500,59 @@ addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
 addEventListener('resize',closeMenu);
 $('home').addEventListener('scroll',closeMenu);
 
+let selMode=false,selIds=new Set(),homeMetas=[];
+function updateSelUI(){
+  const n=selIds.size,total=homeMetas.length;
+  $('homeSel').hidden=selMode||!total;
+  $('selAll').hidden=$('selDel').hidden=$('selCancel').hidden=!selMode;
+  $('selAll').textContent=n===total&&total?'選択解除':'すべて選択';
+  $('selDel').disabled=!n;
+  $('selDel').innerHTML=ic('trash')+'削除'+(n?'（'+n+'）':'');
+  $('subtxt').textContent=selMode?n+'件を選択中':'保存した絵（このブラウザに自動保存されています）';
+}
+function setSelMode(on){selMode=on;selIds.clear();renderHome()}
+async function deleteSelected(){
+  const ms=homeMetas.filter(m=>selIds.has(m.id));
+  if(!ms.length)return;
+  if(!await uiConfirm(ms.length+'件の絵を削除しますか？\nこの操作は元に戻せません。',{ok:'削除',danger:true}))return;
+  let fail=0;
+  for(const m of ms){
+    try{
+      if(m.cloud){
+        try{await api('DELETE','/api/d/'+m.cloud.id,{key:m.cloud.ownerKey})}
+        catch(e){if(e.status!==404&&e.status!==403)throw e}
+      }
+      await delDrawing(m.id);
+      selIds.delete(m.id);
+    }catch(e){fail++}
+  }
+  if(fail)toast(fail+'件を削除できませんでした');
+  else selMode=false;
+  renderHome();
+}
+$('homeSel').onclick=()=>setSelMode(true);
+$('selCancel').onclick=()=>setSelMode(false);
+$('selAll').onclick=()=>{
+  if(selIds.size===homeMetas.length)selIds.clear();
+  else homeMetas.forEach(m=>selIds.add(m.id));
+  renderHome();
+};
+$('selDel').onclick=deleteSelected;
+addEventListener('keydown',e=>{if(e.key==='Escape'&&selMode&&!$('modal')&&!$('home').hidden)setSelMode(false)});
 async function renderHome(){
   const g=$('grid');
   let idx;
   try{idx=(await listMeta()).sort((a,b)=>b.updated-a.updated)}
   catch(e){idx=[];uiAlert('このブラウザでは保存機能（IndexedDB）を利用できません。プライベートモードの場合は通常モードでお試しください。')}
+  homeMetas=idx;
+  if(!idx.length)selMode=false;
+  const known=new Set(idx.map(m=>m.id));
+  selIds.forEach(i=>{if(!known.has(i))selIds.delete(i)});
   g.innerHTML='';
   const nb=document.createElement('div');nb.className='card new';nb.tabIndex=0;
   nb.innerHTML='<div class="th">'+ic('plus')+'</div><div class="meta"><b>新規作成</b><span>白紙から描き始める</span></div>';
   nb.onclick=newDrawing;nb.onkeydown=e=>{if(e.key==='Enter')newDrawing()};
-  g.appendChild(nb);
+  if(!selMode)g.appendChild(nb);
   idx.forEach(m=>{
     const c=document.createElement('div');c.className='card';c.tabIndex=0;
     const th=document.createElement('div');th.className='th';
@@ -1510,11 +1565,22 @@ async function renderHome(){
     x.setAttribute('aria-label','その他の操作');x.setAttribute('aria-haspopup','menu');
     x.onclick=e=>{e.stopPropagation();openMenu(x,m)};
     x.onkeydown=e=>e.stopPropagation();
-    c.append(th,meta,x);
-    c.onclick=()=>openDrawing(m.id);c.onkeydown=e=>{if(e.key==='Enter')openDrawing(m.id)};
+    if(selMode){
+      const ck=document.createElement('span');ck.className='ck';ck.innerHTML=ic('check');
+      const mark=()=>{const on=selIds.has(m.id);c.classList.toggle('sel',on);c.setAttribute('aria-checked',String(on))};
+      c.setAttribute('role','checkbox');mark();
+      c.append(th,meta,ck);
+      const tg=()=>{if(selIds.has(m.id))selIds.delete(m.id);else selIds.add(m.id);mark();updateSelUI()};
+      c.onclick=tg;
+      c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tg()}};
+    }else{
+      c.append(th,meta,x);
+      c.onclick=()=>openDrawing(m.id);c.onkeydown=e=>{if(e.key==='Enter')openDrawing(m.id)};
+    }
     g.appendChild(c);
   });
   $('empty').hidden=idx.length>0;
+  updateSelUI();
 }
 function prepImage(file){
   return new Promise((res,rej)=>{
@@ -1649,6 +1715,38 @@ function penSvg(k){
   const glow=t.glow?' style="filter:drop-shadow(0 0 3px currentColor)"':'';
   return '<svg viewBox="0 0 64 24" aria-hidden="true"'+glow+'><path d="M6 17C18 3 30 3 36 12S50 21 58 7" fill="none" stroke="currentColor" stroke-width="'+w+'" stroke-opacity="'+t.a+'" stroke-linecap="'+(t.cap||'round')+'" stroke-linejoin="round"'+dash+'/></svg>';
 }
+const isShapeObj=o=>!isEraserStroke(o)&&(o.isShape||['rect','ellipse','polygon','line'].includes(o.type)||(o.type==='group'&&o.getObjects().some(c=>c.type==='line')));
+function shapeWidthOf(o){
+  if(o.type==='group'){const l=o.getObjects().find(c=>c.type==='line');return l?l.strokeWidth:null}
+  return o.strokeWidth;
+}
+function applyShapeWidth(o,w){
+  if(o.type==='group'){
+    o.getObjects().forEach(c=>{
+      if(c.type==='line')c.set('strokeWidth',w);
+      else if(c.type==='triangle'){const h=10+w*2;c.set({width:h,height:h})}
+    });
+    if(o.triggerLayout)o.triggerLayout();
+    o.dirty=true;
+  }else o.set('strokeWidth',w);
+  o.setCoords();
+}
+function setShapeLw(v,noApply){
+  slw=v;$('mslw').value=v;$('mslwv').textContent=v+'px';
+  if(noApply||tool!=='select')return;
+  let n=0;
+  canvas.getActiveObjects().forEach(o=>{if(isShapeObj(o)){applyShapeWidth(o,v);n++}});
+  if(n){widthPending=true;canvas.requestRenderAll()}
+}
+function syncShapeWidth(){
+  if(tool!=='select')return;
+  const o=canvas.getActiveObjects().find(isShapeObj);
+  if(!o)return;
+  const w=shapeWidthOf(o);
+  if(w)setShapeLw(Math.max(1,Math.min(40,Math.round(w))),true);
+}
+$('mslw').oninput=e=>setShapeLw(+e.target.value);
+$('mslw').onchange=()=>{if(widthPending){widthPending=false;snap()}};
 function syncMobileColor(){
   $('mcol').style.background=fg;
   $('mfgsw').style.background=fg;
@@ -1675,6 +1773,7 @@ function toggleSheet(name){
   $('mtitle').textContent=SHEET_TITLES[name];
   document.querySelectorAll('#msheet [data-p]').forEach(p=>p.hidden=p.dataset.p!==name);
   if(name==='text')syncTextFromSelection();
+  if(name==='shape')syncShapeWidth();
   $('msheet').hidden=false;
   updateMobile();
 }
