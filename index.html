@@ -14,8 +14,8 @@
 <link href="favicon/180.png" rel="apple-touch-icon" type="image/png">
 <link href="favicon/152.png" rel="apple-touch-icon-precomposed" type="image/png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.49.0/dist/tabler-icons.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.50.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fabric@7.4.0/dist/index.min.js"></script>
 <script src="config.js"></script>
 <style>
 :root{--bg:#f3f3f3;--panel:#fbfbfb;--ink:#1b1b1b;--muted:#5d5d5d;--line:#e0e0e0;--hover:#ececec;--sel:#d6e8f8;--accent:#0067c0;--desk:#e9e9e9;
@@ -418,8 +418,10 @@ try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}ca
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const fmt=t=>{const d=new Date(t);return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
 
-const baseToObject=fabric.Object.prototype.toObject;
-fabric.Object.prototype.toObject=function(p){const o=baseToObject.call(this,p);o.layer=this.layer;o.oid=this.oid;return o};
+fabric.FabricObject.ownDefaults.originX='left';
+fabric.FabricObject.ownDefaults.originY='top';
+fabric.FabricObject.customProperties=['layer','oid'];
+const bbox=o=>{o.setCoords();return o.getBoundingRect()};
 const isEraserStroke=o=>o.globalCompositeOperation==='destination-out';
 function makeLayeredRender(getLayers){
   return function(ctx,objects){
@@ -460,18 +462,11 @@ const ZMIN=0.1,ZMAX=8;
 let zoom=1,viewK=1;
 const SEL_COLOR='#0d99ff';
 function applySelectionStyle(sc){
-  const o=fabric.Object.prototype;
-  o.borderColor=SEL_COLOR;
-  o.borderDashArray=null;
-  o.cornerColor='#ffffff';
-  o.cornerStrokeColor=SEL_COLOR;
-  o.cornerStyle='rect';
-  o.transparentCorners=false;
-  o.cornerSize=9/sc;
-  o.touchCornerSize=28/sc;
-  o.borderScaleFactor=1/sc;
-  o.padding=0;
-  o.borderOpacityWhenMoving=1;
+  const st={borderColor:SEL_COLOR,borderDashArray:null,cornerColor:'#ffffff',cornerStrokeColor:SEL_COLOR,cornerStyle:'rect',transparentCorners:false,cornerSize:9/sc,touchCornerSize:28/sc,borderScaleFactor:1/sc,padding:0,borderOpacityWhenMoving:1};
+  Object.assign(fabric.FabricObject.ownDefaults,st);
+  canvas.getObjects().forEach(x=>x.set(st));
+  const act=canvas.getActiveObject();
+  if(act)act.set(st);
   canvas.selectionColor='rgba(13,153,255,.1)';
   canvas.selectionBorderColor=SEL_COLOR;
   canvas.selectionLineWidth=1/sc;
@@ -545,7 +540,7 @@ $('desk').addEventListener('touchmove',e=>{
 const endPinch=e=>{if(e.touches.length<2)pinch=null};
 $('desk').addEventListener('touchend',endPinch,true);
 $('desk').addEventListener('touchcancel',endPinch,true);
-function setSize(w,h){canvas.setWidth(w);canvas.setHeight(h);fitView();canvas.renderAll();$('size').textContent=w+' × '+h+' px'}
+function setSize(w,h){canvas.setDimensions({width:w,height:h});fitView();canvas.renderAll();$('size').textContent=w+' × '+h+' px'}
 function fit(){setSize(CW,CH)}
 new ResizeObserver(fitView).observe($('desk'));
 
@@ -684,7 +679,7 @@ function load(s){
   keepRemote(o);
   layers=o.layers.map(l=>({...l}));activeLayer=o.active;
   busy=true;
-  canvas.loadFromJSON(o.c,()=>{canvas.renderAll();renderLayers();setTool(tool);busy=false;scheduleSave();loadUsedFonts(canvas.getObjects()).then(r=>{if(r)canvas.requestRenderAll()})});
+  canvas.loadFromJSON(o.c).then(()=>{canvas.renderAll();renderLayers();setTool(tool);busy=false;scheduleSave();loadUsedFonts(canvas.getObjects()).then(r=>{if(r)canvas.requestRenderAll()})});
 }
 canvas.on('object:added',e=>{if(!e.target.layer)e.target.layer=drawLayerId();if(!e.target.oid)e.target.oid=newOid();reorder()});
 canvas.on('object:added',snap);canvas.on('object:modified',snap);canvas.on('object:removed',snap);
@@ -794,7 +789,7 @@ function makeShape(t,x0,y0,x1,y1,shift){
   return new fabric.Path(d,base);
 }
 canvas.on('mouse:down',o=>{
-  const p=canvas.getPointer(o.e);
+  const p=canvas.getScenePoint(o.e);
   if(tool==='eraser'&&o.target&&o.target.type!=='path'&&o.target.layer===activeLayer){canvas.remove(o.target);return}
   if((tool==='text'||tool==='pen'||tool==='eraser'||shapes.includes(tool))&&blocked())return;
   if(tool==='text'){textAt=p;return}
@@ -813,7 +808,7 @@ function clearGuides(){
 }
 canvas.on('after:render',()=>{
   if(!guideLines.length&&!guideLabels.length)return;
-  const ctx=canvas.contextContainer,sc=viewScale();
+  const ctx=canvas.getContext(),sc=viewScale();
   ctx.save();
   ctx.lineJoin='miter';
   guideLines.forEach(g=>{
@@ -865,7 +860,7 @@ function lineSnap(p,show){
   return q;
 }
 canvas.on('mouse:move',o=>{
-  const p=canvas.getPointer(o.e);$('pos').textContent=Math.round(p.x)+', '+Math.round(p.y)+' px';
+  const p=canvas.getScenePoint(o.e);$('pos').textContent=Math.round(p.x)+', '+Math.round(p.y)+' px';
   if(!drawing)return;
   const q=o.e.shiftKey?p:lineSnap(p,true);
   busy=true;canvas.remove(drawing);
@@ -876,7 +871,7 @@ canvas.on('mouse:move',o=>{
 canvas.on('mouse:up',o=>{
   clearGuides();
   if(!drawing)return;
-  const p=canvas.getPointer(o.e);
+  const p=canvas.getScenePoint(o.e);
   const q=o.e.shiftKey?p:lineSnap(p,false);
   busy=true;canvas.remove(drawing);drawing=null;
   const tiny=Math.hypot(p.x-start.x,p.y-start.y)<3;
@@ -891,11 +886,11 @@ canvas.on('object:moving',e=>{
   const xs=[0,CW/2,CW],ys=[0,CH/2,CH];
   canvas.getObjects().forEach(o=>{
     if(skip.has(o)||!o.visible||isEraserStroke(o))return;
-    const b=o.getBoundingRect(true,true);
+    const b=bbox(o);
     xs.push(b.left,b.left+b.width/2,b.left+b.width);
     ys.push(b.top,b.top+b.height/2,b.top+b.height);
   });
-  const r=t.getBoundingRect(true,true);
+  const r=bbox(t);
   const mx=[r.left,r.left+r.width/2,r.left+r.width],my=[r.top,r.top+r.height/2,r.top+r.height];
   const best=(mine,cands)=>{
     let d=null,at=0;
@@ -920,7 +915,7 @@ canvas.on('object:rotating',e=>{
     t.setPositionByOrigin(c,'center','center');
     t.setCoords();
   }
-  const b=t.getBoundingRect(true,true);
+  const b=bbox(t);
   guideLines=[];
   guideLabels=[{x:c.x,y:b.top,text:angleText(a),hit:r.hit}];
   canvas.requestRenderAll();
@@ -928,13 +923,13 @@ canvas.on('object:rotating',e=>{
 const canvasPt=(cx,cy)=>{const r=canvas.upperCanvasEl.getBoundingClientRect();return{x:(cx-r.left)*canvas.width/r.width,y:(cy-r.top)*canvas.height/r.height}};
 function hitObject(o,pt,tol){
   if(o.containsPoint(pt))return true;
-  const b=o.getBoundingRect(true,true);
+  const b=bbox(o);
   if(Math.min(b.width,b.height)>=tol*2)return false;
   return pt.x>=b.left-tol&&pt.x<=b.left+b.width+tol&&pt.y>=b.top-tol&&pt.y<=b.top+b.height+tol;
 }
 function objectAt(pt){
   const ao=canvas.getActiveObject();
-  if(ao&&ao.type==='activeSelection'&&ao.containsPoint(pt))return ao;
+  if(ao&&ao.isType('ActiveSelection')&&ao.containsPoint(pt))return ao;
   const inSel=new Set(ao&&ao._objects||[]);
   const list=canvas._objects,tol=8/viewScale();
   for(let i=list.length-1;i>=0;i--){
@@ -986,7 +981,7 @@ async function copySelection(){
   const objs=canvas.getActiveObjects().filter(o=>!isEraserStroke(o)).sort((p,q)=>a.indexOf(p)-a.indexOf(q));
   if(!objs.length)return;
   canvas.discardActiveObject();
-  clipboard=await Promise.all(objs.map(o=>new Promise(res=>o.clone(res))));
+  clipboard=await Promise.all(objs.map(o=>o.clone()));
   reselect(objs);
   canvas.requestRenderAll();
   toast('コピーしました');
@@ -997,10 +992,10 @@ async function pasteAt(pt){
   if(L&&L.bg)setActive(drawLayerId());
   if(blocked())return;
   if(tool!=='select')setTool('select');
-  const clones=await Promise.all(clipboard.map(o=>new Promise(res=>o.clone(res))));
+  const clones=await Promise.all(clipboard.map(o=>o.clone()));
   let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
   clones.forEach(c=>{
-    const b=c.getBoundingRect(true,true);
+    const b=bbox(c);
     x0=Math.min(x0,b.left);y0=Math.min(y0,b.top);
     x1=Math.max(x1,b.left+b.width);y1=Math.max(y1,b.top+b.height);
   });
@@ -1140,7 +1135,6 @@ function hookEraser(b){
     mv(pt,o);
     if(!this._points||this._points.length<2)return;
     const d=this.convertPointsToSVGPath(this._points);
-    if(this._isEmptySVGPath&&this._isEmptySVGPath(d))return;
     const path=this.createPath(d);
     path.set({stroke:'#000',globalCompositeOperation:'destination-out',selectable:false,evented:false,layer:activeLayer});
     busy=true;if(prev)canvas.remove(prev);canvas.add(path);busy=false;prev=path;
@@ -1354,7 +1348,7 @@ async function openDrawing(id,quiet){
   layers=normalizeLayers(d.layers||[],d.c&&d.c.background);
   activeLayer=firstDrawLayer().id;
   busy=true;
-  canvas.loadFromJSON(d.c,()=>{
+  canvas.loadFromJSON(d.c).then(()=>{
     setSize(CW,CH);
     busy=false;renderLayers();resetHist();setTool('pen');
     loadUsedFonts(canvas.getObjects()).then(r=>{if(r)canvas.requestRenderAll()});
@@ -1384,7 +1378,7 @@ async function renderPng(id){
   const el=document.createElement('canvas');
   const sc=new fabric.StaticCanvas(el,{width:CW,height:CH});
   sc._renderObjects=makeLayeredRender(()=>d.layers||[]);
-  await new Promise(res=>sc.loadFromJSON(d.c,res));
+  await sc.loadFromJSON(d.c);
   await loadUsedFonts(sc.getObjects());
   sc.renderAll();
   const url=sc.toDataURL({format:'png',multiplier:2});
@@ -1542,7 +1536,7 @@ function prepImage(file){
 }
 function placeImage(p,fill){
   return new Promise(res=>{
-    fabric.Image.fromURL(p.url,img=>{
+    fabric.Image.fromURL(p.url).then(img=>{
       const k=Math.min(CW/p.w,CH/p.h),s=fill?k:Math.min(1,k);
       img.set({left:(CW-p.w*s)/2,top:(CH-p.h*s)/2,scaleX:s,scaleY:s});
       canvas.add(img);setTool('select');canvas.setActiveObject(img);canvas.renderAll();res();
@@ -1888,7 +1882,7 @@ function applyData(d,done,fresh){
   layers=normalizeLayers(d.layers||[],d.c&&d.c.background);
   activeLayer=fresh?firstDrawLayer().id:layers.some(l=>l.id===keep)?keep:firstDrawLayer().id;
   busy=true;
-  canvas.loadFromJSON(d.c,()=>{
+  canvas.loadFromJSON(d.c).then(()=>{
     setSize(CW,CH);
     busy=false;renderLayers();resetHist();setTool(tool);
     loadUsedFonts(canvas.getObjects()).then(r=>{if(r)canvas.requestRenderAll()});
@@ -2082,7 +2076,7 @@ function liveStart(){
 }
 function liveAdd(o){
   if(!liveSid||!o||!o.e)return;
-  const p=canvas.getPointer(o.e);
+  const p=canvas.getScenePoint(o.e);
   livePts.push(Math.round(p.x*10)/10,Math.round(p.y*10)/10);
   if(!liveT)liveT=setTimeout(liveFlush,30);
 }
@@ -2172,7 +2166,7 @@ async function applyOpNow(m){
   await idle();
   if(!cloud)return;
   let objs=[];
-  if(m.a&&m.a.length)objs=await new Promise(r=>fabric.util.enlivenObjects(m.a,r,'fabric'));
+  if(m.a&&m.a.length)objs=await fabric.util.enlivenObjects(m.a);
   await idle();
   if(!cloud)return;
   const act=new Set(canvas.getActiveObjects());
@@ -2211,7 +2205,7 @@ async function applyOpNow(m){
       if(old&&!free(old))return;
       let idx=-1;
       if(old){idx=canvas._objects.indexOf(old);canvas.remove(old)}
-      if(idx>=0)canvas.insertAt(n,idx);else canvas.add(n);
+      if(idx>=0)canvas.insertAt(idx,n);else canvas.add(n);
       byId.set(n.oid,n);
       sentMap.set(n.oid,JSON.stringify(canvas._toObject(n,'toObject')));
       mine.delete(n.oid);
