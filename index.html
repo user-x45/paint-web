@@ -261,8 +261,8 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .card .meta b{font-size:13px}
 .empty{text-align:center;padding:40px 12px}
 }
-body.ro .ribbon,body.ro #mdock,body.ro #lpanel,body.ro #lbtn,body.ro .mtop:not(#mmore),body.ro .dtop,body.ro #share,body.ro #tbToggle{display:none!important}
-body.ro #msheet [data-act]:not([data-act="save"]){display:none}
+body.ro .ribbon,body.ro #mdock,body.ro #lpanel,body.ro #lbtn,body.ro .mtop:not(#mmore),body.ro .dtop:not(#pexp),body.ro #share,body.ro #tbToggle{display:none!important}
+body.ro #msheet [data-act]:not([data-act="save"]):not([data-act="export"]){display:none}
 body.guest #share,body.guest #pimp{display:none!important}
 body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{display:none}
 .shr{width:min(460px,100%);max-height:calc(100vh - 32px);overflow:auto}
