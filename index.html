@@ -43,7 +43,7 @@ body{background:var(--bg);color:var(--ink);font:13px "Segoe UI Variable","Segoe 
 .ib{width:34px;height:34px;border:0;background:none;color:var(--ink);border-radius:6px;display:grid;place-items:center;padding:0;position:relative;cursor:pointer}
 .ib.on{background:var(--sel)}
 .ib.on::after{content:"";position:absolute;left:9px;right:9px;bottom:2px;height:2px;border-radius:2px;background:var(--accent)}
-select,input[type=color]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;height:26px}
+select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;height:26px}
 select{padding:0 4px;max-width:96px}
 input[type=range]{width:96px;accent-color:var(--accent)}
 #lwv{width:34px;text-align:right;color:var(--muted)}
@@ -54,7 +54,7 @@ input[type=range]{width:96px;accent-color:var(--accent)}
 #sw{display:grid;grid-template-columns:repeat(10,18px);gap:3px}
 #sw button{width:18px;height:18px;padding:0;border-radius:50%;border:1px solid rgba(128,128,128,.5)}
 #sw button:hover{transform:scale(1.2)}
-#custom{width:30px;height:30px;padding:2px;margin-left:6px}
+#custom{width:30px;height:30px;margin-left:6px}
 @media (max-width:480px){.top{gap:2px;padding:6px}.top b{margin-right:4px}.top button{padding:5px 6px}.top button i{margin-right:2px}}
 #palBtn{display:none}
 .ribbon.c1 .g{padding:0 6px}
@@ -105,7 +105,7 @@ input[type=range]{width:96px;accent-color:var(--accent)}
 #bgp button{width:100%;aspect-ratio:1;min-height:24px;padding:0;border-radius:50%;border:1px solid rgba(128,128,128,.5);cursor:pointer;touch-action:manipulation}
 #bgp button:hover{transform:scale(1.08)}
 #bgp button.cur{box-shadow:0 0 0 2px var(--accent)}
-#lbgc{width:32px;height:32px;padding:2px;border-radius:6px;flex:none}
+#lbgc{width:32px;height:32px}
 .grip{width:16px;height:28px;display:grid;place-items:center;flex:none;color:var(--muted);touch-action:none;cursor:grab}
 .lr.drag{opacity:.5}
 .lr.drop-top{box-shadow:0 -2px 0 var(--accent)}
@@ -175,6 +175,21 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
 .card.sel .ck{background:var(--accent);border-color:var(--accent)}
 .card.sel .ck i{opacity:1}
+.cpick{flex:none;display:block;padding:3px;border:0;border-radius:50%;background:conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);cursor:pointer}
+.cpick:hover{transform:scale(1.08)}
+.cpick .cs{display:block;width:100%;height:100%;border-radius:50%;border:2px solid var(--panel)}
+.cpanel{position:fixed;z-index:90;width:236px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.3);padding:12px;display:flex;flex-direction:column;gap:12px}
+.cp-sv{position:relative;height:148px;border-radius:8px;cursor:crosshair;touch-action:none}
+.cp-hue{position:relative;height:14px;border-radius:7px;background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);cursor:pointer;touch-action:none}
+.cp-svt,.cp-hut{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.4);pointer-events:none}
+.cp-hut{top:50%}
+.cp-row{display:flex;align-items:center;gap:8px}
+.cp-prev{width:28px;height:28px;border-radius:50%;border:1px solid var(--muted);flex:none}
+.cp-hex{flex:1;min-width:0;height:30px;font:inherit;font-family:ui-monospace,Consolas,monospace;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:0 8px;user-select:text;-webkit-user-select:text}
+.cp-eye{width:30px;height:30px;flex:none;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.cp-eye i{font-size:18px}
+.cp-ok{height:30px;flex:none;padding:0 12px;border:0;border-radius:6px;background:var(--accent);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+@media (prefers-color-scheme:dark){.cp-ok{color:#00243d}}
 .ribbon{display:none!important}
 .msw{width:18px;height:18px;border-radius:50%;border:1px solid var(--muted);display:inline-block;flex:none}
 .top{height:48px;flex:none;padding:0 10px}
@@ -210,7 +225,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .mrowx{display:flex;align-items:center;gap:10px;margin-top:12px}
 .mrowx label{color:var(--muted);width:56px;flex:none}
 .mrowx input[type=range]{flex:1;width:auto}
-.mrowx input[type=color]{width:56px;height:36px;padding:2px}
+#mcustom{width:36px;height:36px}
 .mlist{display:flex;flex-direction:column;gap:6px}
 .mlist .mbtn{flex-direction:row;justify-content:flex-start;padding:10px 12px;gap:10px;font-size:14px;min-height:46px}
 @media (max-width:900px){#lpanel{width:220px}}
@@ -337,7 +352,7 @@ body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{dis
   <div class="g"><div class="row"><input type="range" id="lw" min="1" max="40" value="4" aria-label="サイズ"><span id="lwv">4px</span></div><small>サイズ</small></div>
   <div class="g"><div class="row">
     <div id="cur"><div id="bgb" style="background:#fff"></div><div id="fgb" class="t" style="background:#000"></div></div>
-    <div id="sw"></div><button class="ib" id="palBtn" title="パレット" aria-label="パレット" aria-expanded="false" data-ic="down"></button><input type="color" id="custom" value="#0067c0" title="色の編集"></div><small>色</small></div>
+    <div id="sw"></div><button class="ib" id="palBtn" title="パレット" aria-label="パレット" aria-expanded="false" data-ic="down"></button><button class="cpick" id="custom" title="色の編集" aria-label="色の編集" aria-haspopup="dialog" aria-expanded="false"><span class="cs" style="background:#0067c0"></span></button></div><small>色</small></div>
   <div class="g"><div class="row"><button class="ib" id="lbtn" title="レイヤー" aria-label="レイヤー" aria-expanded="false" data-ic="layers"></button></div><small>レイヤー</small></div>
 </div>
 <div id="work">
@@ -363,7 +378,7 @@ body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{dis
   <div id="lset">
     <div class="ls"><label for="lname">名前</label><input id="lname" maxlength="20"></div>
     <div class="ls" id="lopRow"><label for="lop">不透明度</label><input type="range" id="lop" min="0" max="100" value="100"><span id="lopv">100%</span></div>
-    <div class="ls" id="lbgRow" hidden><label for="lbgc">背景色</label><div class="bgl"><div id="bgp"></div><input type="color" id="lbgc" value="#ffffff" title="色の編集"></div></div>
+    <div class="ls" id="lbgRow" hidden><label for="lbgc">背景色</label><div class="bgl"><div id="bgp"></div><button class="cpick" id="lbgc" title="色の編集" aria-label="色の編集" aria-haspopup="dialog" aria-expanded="false"><span class="cs" style="background:#ffffff"></span></button></div></div>
   </div>
 </aside>
 </div>
@@ -380,7 +395,7 @@ body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{dis
 <div data-p="color" hidden>
 <div class="mseg"><button class="mbtn on" id="mfg"><span class="msw" id="mfgsw" style="background:#000"></span>線・文字</button><button class="mbtn" id="mbg"><span class="msw" id="mbgsw" style="background:#fff"></span>塗り</button></div>
 <div id="mpal"></div>
-<div class="mrowx"><label for="mcustom">カスタム</label><input type="color" id="mcustom" value="#0067c0"></div>
+<div class="mrowx"><label for="mcustom">カスタム</label><button class="cpick" id="mcustom" title="色の編集" aria-label="色の編集" aria-haspopup="dialog" aria-expanded="false"><span class="cs" style="background:#0067c0"></span></button></div>
 <div class="mrowx"><label for="mlw">サイズ</label><input type="range" id="mlw" min="1" max="40" value="4"><span id="mlwv">4px</span></div>
 </div>
 <div data-p="more" hidden>
@@ -639,8 +654,117 @@ try{tbHidden=localStorage.getItem('toolbarHidden')==='1'}catch(e){}
 if(tbHidden)setToolbar(false);
 addEventListener('resize',fitRibbon);
 addEventListener('orientationchange',fitRibbon);
-$('custom').oninput=e=>setCol(e.target.value,null,true);
-$('custom').onchange=commitColor;
+let cpEl=null,cpClose=null,bgPend=false;
+const toHex=(r,g,b)=>'#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+function parseHex(t){
+  t=String(t).trim().replace(/^#/,'');
+  if(/^[0-9a-f]{3}$/i.test(t))t=t.replace(/./g,'$&$&');
+  if(!/^[0-9a-f]{6}$/i.test(t))return null;
+  const n=parseInt(t,16);
+  return[n>>16&255,n>>8&255,n&255];
+}
+function hsv2rgb(h,s,v){
+  const f=n=>{const k=(n+h/60)%6;return v-v*s*Math.max(0,Math.min(k,4-k,1))};
+  return[f(5),f(3),f(1)].map(x=>Math.round(x*255));
+}
+function rgb2hsv(r,g,b){
+  r/=255;g/=255;b/=255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
+  let h=0;
+  if(d){
+    if(mx===r)h=((g-b)/d+6)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;
+    h*=60;
+  }
+  return[h,mx?d/mx:0,mx];
+}
+const setSwatch=(btn,c)=>{btn.firstElementChild.style.background=c};
+function openColorPicker(anchor,init,live,commit){
+  if(cpEl&&cpEl.anchor===anchor){cpClose();return}
+  if(cpClose)cpClose();
+  let[h,s,v]=rgb2hsv(...(parseHex(init)||[0,103,192]));
+  const el=document.createElement('div');
+  el.className='cpanel';el.setAttribute('role','dialog');el.setAttribute('aria-label','色の編集');
+  el.innerHTML='<div class="cp-sv"><div class="cp-svt"></div></div><div class="cp-hue"><div class="cp-hut"></div></div><div class="cp-row"><span class="cp-prev"></span><input class="cp-hex" maxlength="7" spellcheck="false" aria-label="カラーコード"><button class="cp-eye" title="スポイト" aria-label="スポイト"><i class="ti ti-color-picker" aria-hidden="true"></i></button><button class="cp-ok">OK</button></div>';
+  document.body.appendChild(el);
+  const q=c=>el.querySelector(c);
+  const sv=q('.cp-sv'),svt=q('.cp-svt'),hue=q('.cp-hue'),hut=q('.cp-hut'),prev=q('.cp-prev'),hex=q('.cp-hex'),eye=q('.cp-eye'),ok=q('.cp-ok');
+  let picking=false;
+  const paint=()=>{
+    const c=toHex(...hsv2rgb(h,s,v));
+    sv.style.background='linear-gradient(to top,#000,rgba(0,0,0,0)),linear-gradient(to right,#fff,rgba(255,255,255,0)),hsl('+h+',100%,50%)';
+    svt.style.left=s*100+'%';svt.style.top=(1-v)*100+'%';svt.style.background=c;
+    hut.style.left=h/360*100+'%';hut.style.background='hsl('+h+',100%,50%)';
+    prev.style.background=c;
+    if(document.activeElement!==hex)hex.value=c;
+    return c;
+  };
+  const emit=()=>{const c=paint();setSwatch(anchor,c);live(c)};
+  const drag=(node,fn)=>{
+    node.addEventListener('pointerdown',e=>{
+      e.preventDefault();
+      node.setPointerCapture(e.pointerId);
+      const mv=ev=>{
+        const b=node.getBoundingClientRect();
+        fn(Math.max(0,Math.min(1,(ev.clientX-b.left)/b.width)),Math.max(0,Math.min(1,(ev.clientY-b.top)/b.height)));
+        emit();
+      };
+      const up=()=>{
+        node.removeEventListener('pointermove',mv);
+        node.removeEventListener('pointerup',up);
+        node.removeEventListener('pointercancel',up);
+        commit();
+      };
+      node.addEventListener('pointermove',mv);
+      node.addEventListener('pointerup',up);
+      node.addEventListener('pointercancel',up);
+      mv(e);
+    });
+  };
+  drag(sv,(x,y)=>{s=x;v=1-y});
+  drag(hue,x=>{h=Math.min(359.99,x*360)});
+  hex.oninput=()=>{const p=parseHex(hex.value);if(!p)return;[h,s,v]=rgb2hsv(...p);emit()};
+  hex.onchange=()=>{paint();commit()};
+  hex.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();hex.blur()}};
+  if(window.EyeDropper){
+    eye.onclick=async()=>{
+      picking=true;
+      try{
+        const r=await new EyeDropper().open();
+        const p=parseHex(r.sRGBHex);
+        if(p){[h,s,v]=rgb2hsv(...p);emit();commit()}
+      }catch(e){}
+      picking=false;
+    };
+  }else eye.hidden=true;
+  const place=()=>{
+    const a=anchor.getBoundingClientRect(),w=el.offsetWidth,ht=el.offsetHeight;
+    const x=Math.max(8,Math.min(a.left+a.width/2-w/2,innerWidth-w-8));
+    let y=a.top-ht-8;
+    if(y<8)y=a.bottom+8;
+    y=Math.max(8,Math.min(y,innerHeight-ht-8));
+    el.style.left=x+'px';el.style.top=y+'px';
+  };
+  const out=e=>{if(!picking&&!el.contains(e.target)&&!anchor.contains(e.target))cpClose()};
+  const key=e=>{if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();cpClose()}};
+  document.addEventListener('pointerdown',out,true);
+  addEventListener('keydown',key,true);
+  addEventListener('resize',place);
+  ok.onclick=()=>cpClose();
+  cpEl={anchor};
+  cpClose=()=>{
+    commit();
+    document.removeEventListener('pointerdown',out,true);
+    removeEventListener('keydown',key,true);
+    removeEventListener('resize',place);
+    el.remove();
+    anchor.setAttribute('aria-expanded','false');
+    cpEl=null;cpClose=null;
+  };
+  anchor.setAttribute('aria-expanded','true');
+  paint();place();
+}
+const bindPicker=(btn,getInit,live,commit)=>{btn.onclick=()=>openColorPicker(btn,getInit(),live,commit)};
+bindPicker($('custom'),()=>target==='fg'?fg:bg,c=>setCol(c,null,true),commitColor);
 function setLw(v){lw=v;$('lw').value=v;$('mlw').value=v;$('lwv').textContent=v+'px';$('mlwv').textContent=v+'px';applyBrush()}
 $('lw').oninput=e=>setLw(+e.target.value);
 $('mlw').oninput=e=>setLw(+e.target.value);
@@ -1243,7 +1367,7 @@ function renderLayers(){
   $('lop').value=op;$('lopv').textContent=op+'%';
   $('lbgRow').hidden=!A.bg;
   if(A.bg){
-    $('lbgc').value=A.color;
+    setSwatch($('lbgc'),A.color);
     [...$('bgp').children].forEach(b=>b.classList.toggle('cur','#'+b.dataset.c===A.color.toLowerCase()));
   }
   $('lup').disabled=$('ldown').disabled=$('ldel').disabled=!!A.bg;
@@ -1324,13 +1448,12 @@ COLORS.forEach(h=>{
   b.onclick=()=>{setBgColor('#'+h);snap()};
   $('bgp').appendChild(b);
 });
-$('lbgc').oninput=e=>setBgColor(e.target.value);
-$('lbgc').onchange=()=>snap();
+bindPicker($('lbgc'),()=>{const L=layerOf(activeLayer);return L&&L.bg?L.color:'#ffffff'},c=>{bgPend=true;setBgColor(c)},()=>{if(bgPend){bgPend=false;snap()}});
 
 function resetTools(){
   fg='#000000';bg='#ffffff';setLw(4);setShapeLw(4,true);
   $('fgb').style.background=fg;$('bgb').style.background=bg;pick('fg');
-  $('custom').value='#0067c0';$('mcustom').value='#0067c0';$('fillm').value='outline';penType='pen';$('pent').value='pen';
+  setSwatch($('custom'),'#0067c0');setSwatch($('mcustom'),'#0067c0');$('fillm').value='outline';penType='pen';$('pent').value='pen';
   textSize=32;textFont=FONTS[0].css;textBold=false;textItalic=false;lastShape='rect';colorPending=false;tbHidden=false;setToolbar(true);
   renderTextSheet();syncMobileColor();updateMobile();
 }
@@ -1801,8 +1924,7 @@ COLORS.forEach(h=>{
 });
 $('mfg').onclick=()=>pick('fg');
 $('mbg').onclick=()=>pick('bg');
-$('mcustom').oninput=e=>setCol(e.target.value,null,true);
-$('mcustom').onchange=commitColor;
+bindPicker($('mcustom'),()=>target==='fg'?fg:bg,c=>setCol(c,null,true),commitColor);
 document.querySelectorAll('#mdock [data-mt]').forEach(b=>b.onclick=()=>{
   const k=b.dataset.mt;
   if(k==='pen'){if(tool==='pen')toggleSheet('pen');else{closeSheet();setTool('pen')}}
