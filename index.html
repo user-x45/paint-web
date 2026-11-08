@@ -99,13 +99,13 @@ input[type=range]{width:96px;accent-color:var(--accent)}
 #lname:disabled{opacity:.6}
 #lop{flex:1;min-width:0}
 #lopv{width:40px;text-align:right;color:var(--muted)}
-#lbgRow{flex-direction:column;align-items:flex-start;gap:6px}
-.bgl{display:flex;align-items:center;gap:8px}
-#bgp{display:grid;grid-template-columns:repeat(10,16px);gap:3px}
-#bgp button{width:16px;height:16px;padding:0;border-radius:50%;border:1px solid rgba(128,128,128,.5);cursor:pointer}
-#bgp button:hover{transform:scale(1.2)}
+#lbgRow{align-items:flex-start;gap:8px}
+.bgl{display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0}
+#bgp{display:grid;grid-template-columns:repeat(auto-fill,minmax(24px,1fr));gap:6px;flex:1;min-width:0}
+#bgp button{width:100%;aspect-ratio:1;min-height:24px;padding:0;border-radius:50%;border:1px solid rgba(128,128,128,.5);cursor:pointer;touch-action:manipulation}
+#bgp button:hover{transform:scale(1.08)}
 #bgp button.cur{box-shadow:0 0 0 2px var(--accent)}
-#lbgc{width:30px;height:30px;padding:2px}
+#lbgc{width:32px;height:32px;padding:2px;border-radius:6px;flex:none}
 .grip{width:16px;height:28px;display:grid;place-items:center;flex:none;color:var(--muted);touch-action:none;cursor:grab}
 .lr.drag{opacity:.5}
 .lr.drop-top{box-shadow:0 -2px 0 var(--accent)}
