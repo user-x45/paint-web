@@ -365,6 +365,14 @@ html{-webkit-tap-highlight-color:transparent}
 @media (pointer:coarse),(max-width:720px){#mdock button{font-size:11px}#toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 .htitle #homeInstall{margin-left:auto}.htitle #homeInstall:not([hidden])+#homeAbout{margin-left:0}#homeInstall[hidden]{display:none}
+#cropbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:50;display:flex;gap:8px;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.3);max-width:calc(100vw - 16px)}
+#cropbar[hidden]{display:none}
+#cropbar button{font:inherit;min-height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;white-space:nowrap}
+#cropbar button:hover{background:var(--hover)}
+#cropbar .ok{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+#cropbar .ok:hover{background:var(--accent);filter:brightness(1.1)}
+@media (prefers-color-scheme:dark){#cropbar .ok{color:#00243d}}
+@media (pointer:coarse),(max-width:720px){#cropbar button{min-height:44px}}
 </style>
 </head>
 <body>
@@ -383,6 +391,7 @@ html{-webkit-tap-highlight-color:transparent}
   <div class="empty" id="empty" hidden><span>まだ絵がありません。</span><span>「新規作成」から描き始めましょう。</span></div>
 </div>
 
+<div id="cropbar" hidden role="toolbar" aria-label="切り抜き"><button id="cropReset">リセット</button><button id="cropCancel">キャンセル</button><button id="cropOk" class="ok">適用</button></div>
 <div id="editor" hidden>
 <div class="top"><button id="home_btn"><i class="ti ti-arrow-left" aria-hidden="true"></i>ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save"><i class="ti ti-download" aria-hidden="true"></i>画像として保存</button><button id="share"><i class="ti ti-share" aria-hidden="true"></i>共有</button><button class="ib mtop" id="mundo" title="元に戻す" aria-label="元に戻す" data-ic="undo"></button><button class="ib mtop" id="mredo" title="やり直し" aria-label="やり直し" data-ic="redo"></button><button class="ib dtop" id="mimg" title="画像を読み込む" aria-label="画像を読み込む" data-ic="photo"></button><button class="ib dtop" id="mresize" title="キャンバスのサイズ" aria-label="キャンバスのサイズ" data-ic="resize"></button><button class="ib dtop" id="mdel" title="選択を削除 (Delete)" aria-label="選択を削除" data-ic="trash"></button><button class="ib mtop" id="mmore" title="その他" aria-label="その他" data-ic="more"></button><button class="ib dtop" id="pexp" title="ファイルに書き出し (.paint)" aria-label="ファイルに書き出し" data-ic="fexport"></button><button class="ib dtop" id="pimp" title="ファイルを読み込む (.paint)" aria-label="ファイルを読み込む" data-ic="fimport"></button><button class="ib" id="tbToggle" title="ツールバーを隠す" aria-label="ツールバーを隠す" aria-expanded="true" data-ic="up"></button></div>
 <div class="ribbon">
@@ -402,7 +411,7 @@ html{-webkit-tap-highlight-color:transparent}
     <button class="ib" data-t="rect" title="四角形" data-ic="rect"></button>
     <button class="ib" data-t="ellipse" title="楕円" data-ic="ellipse"></button>
     <select id="fillm" aria-label="図形の塗り"><option value="outline">輪郭</option><option value="both">輪郭+塗り</option><option value="fill">塗りのみ</option></select></div><small>図形</small></div>
-  <div class="g"><div class="row"><button class="ib" id="imgBtn" title="画像を読み込む" aria-label="画像を読み込む" data-ic="photo"></button></div><small>画像</small></div>
+  <div class="g"><div class="row"><button class="ib" id="imgBtn" title="画像を読み込む" aria-label="画像を読み込む" data-ic="photo"></button><button class="ib" id="cropBtn" title="選択した画像を切り抜く" aria-label="選択した画像を切り抜く" data-ic="crop"></button></div><small>画像</small></div>
   <div class="g"><div class="row"><input type="range" id="lw" min="1" max="40" value="4" aria-label="サイズ"><span id="lwv">4px</span></div><small>サイズ</small></div>
   <div class="g"><div class="row">
     <div id="cur"><div id="bgb" style="background:#fff"></div><div id="fgb" class="t" style="background:#000"></div></div>
@@ -455,6 +464,7 @@ html{-webkit-tap-highlight-color:transparent}
 <div data-p="more" hidden>
 <div class="mlist">
 <button class="mbtn" data-act="img"><i class="ti ti-photo-plus" aria-hidden="true"></i>画像を読み込む</button>
+<button class="mbtn" data-act="crop"><i class="ti ti-crop" aria-hidden="true"></i>画像を切り抜く</button>
 <button class="mbtn" data-act="resize"><i class="ti ti-dimensions" aria-hidden="true"></i>キャンバスのサイズ</button>
 <button class="mbtn" data-act="save"><i class="ti ti-download" aria-hidden="true"></i>画像として保存</button>
 <button class="mbtn" data-act="share"><i class="ti ti-share" aria-hidden="true"></i>共有</button>
@@ -469,7 +479,7 @@ html{-webkit-tap-highlight-color:transparent}
 
 <script>
 const $=id=>document.getElementById(id);
-const P={select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out',dblarrow:'ti ti-arrows-horizontal',roundrect:'ti ti-square-rounded',triangle:'ti ti-triangle',diamond:'ti ti-diamond',pentagon:'ti ti-pentagon',hexagon:'ti ti-hexagon',star:'ti ti-star',heart:'ti ti-heart',bubble:'ti ti-message',cross:'ti ti-plus',tofront:'ti ti-arrow-bar-up',forward:'ti ti-arrow-up',backward:'ti ti-arrow-down',toback:'ti ti-arrow-bar-down',copy:'ti ti-copy',paste:'ti ti-clipboard',info:'ti ti-info-circle',check:'ti ti-check',fexport:'ti ti-file-export',fimport:'ti ti-file-import',resize:'ti ti-dimensions'};
+const P={select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',crop:'ti ti-crop',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out',dblarrow:'ti ti-arrows-horizontal',roundrect:'ti ti-square-rounded',triangle:'ti ti-triangle',diamond:'ti ti-diamond',pentagon:'ti ti-pentagon',hexagon:'ti ti-hexagon',star:'ti ti-star',heart:'ti ti-heart',bubble:'ti ti-message',cross:'ti ti-plus',tofront:'ti ti-arrow-bar-up',forward:'ti ti-arrow-up',backward:'ti ti-arrow-down',toback:'ti ti-arrow-bar-down',copy:'ti ti-copy',paste:'ti ti-clipboard',info:'ti ti-info-circle',check:'ti ti-check',fexport:'ti ti-file-export',fimport:'ti ti-file-import',resize:'ti ti-dimensions'};
 const ic=n=>'<i class="'+P[n]+'" aria-hidden="true"></i>';
 document.querySelectorAll('[data-ic]').forEach(b=>{b.innerHTML=ic(b.dataset.ic)});
 
@@ -534,6 +544,7 @@ const PENS={pen:{k:1,a:1},pencil:{k:.7,a:.75},fine:{k:.4,a:1},marker:{k:2.5,a:.6
 let penType='pen';
 const hexA=(c,a)=>{const h=c.replace('#','');const n=parseInt(h.length===3?h.replace(/./g,'$&$&'):h,16);return 'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')'};
 let tool='pen',fg='#000000',bg='#ffffff',target='fg',lw=4,slw=4,widthPending=false,drawing=null,start=null,hist=[],redoS=[],busy=false,layers=[],activeLayer=null;
+let cropFrame=null,cropImg=null;
 let curId=null,curCreated=0,dirty=false,saveTimer=null,chain=Promise.resolve();
 let cloud=null,ro=false,pulling=false,stopped=null;
 let sentMap=new Map(),sentOrder='',sentLayers='',sentTitle='',mine=new Set(),opQ=false,needPull=false,fullFlag=false,opChain=Promise.resolve(),liveSid=null,livePts=[],liveSent=0,liveStyle=null,liveT=null,liveEnds=[],liveDrawQ=false,localT=null;
@@ -871,7 +882,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)saveNow()})
 $('title').oninput=()=>{document.title='ペイント - '+($('title').value.trim()||'無題');scheduleSave()};
 
 function snapshot(){return JSON.stringify({c:canvas.toJSON(),layers:layers,active:activeLayer,w:CW,h:CH})}
-function snap(){if(busy||ro)return;hist.push(snapshot());if(hist.length>60)hist.shift();redoS=[];scheduleSave()}
+function snap(e){if(busy||ro||(e&&e.target&&e.target===cropFrame))return;hist.push(snapshot());if(hist.length>60)hist.shift();redoS=[];scheduleSave()}
 function load(s){
   const o=JSON.parse(s);
   keepRemote(o);
@@ -883,7 +894,7 @@ canvas.on('object:added',e=>{if(!e.target.layer)e.target.layer=drawLayerId();if(
 canvas.on('object:added',snap);canvas.on('object:modified',snap);canvas.on('object:removed',snap);
 $('undo').onclick=()=>{if(hist.length>1){redoS.push(hist.pop());load(hist[hist.length-1])}};
 $('redo').onclick=()=>{if(redoS.length){const s=redoS.pop();hist.push(s);load(s)}};
-$('del').onclick=()=>{canvas.getActiveObjects().forEach(o=>canvas.remove(o));canvas.discardActiveObject();canvas.renderAll()};
+$('del').onclick=()=>{if(cropFrame)return;canvas.getActiveObjects().forEach(o=>canvas.remove(o));canvas.discardActiveObject();canvas.renderAll()};
 function shareCurrent(){
   canvas.discardActiveObject();canvas.renderAll();
   const name=($('title').value.trim()||'無題').replace(/[\\/:*?"<>|]/g,'_')+'.png';
@@ -926,6 +937,7 @@ function applyBrush(){
   if(t.spray){b.density=Math.max(10,lw*4);b.dotWidth=Math.max(1,lw/3);b.dotWidthVariance=Math.max(1,lw/4);b.randomOpacity=true;b.optimizeOverlapping=true}
 }
 function setTool(t){
+  if(cropFrame)finishCrop('cancel');
   if(ro){canvas.isDrawingMode=false;canvas.selection=false;canvas.skipTargetFind=true;canvas.defaultCursor='default';return}
   canvas.skipTargetFind=false;
   tool=t;
@@ -1237,7 +1249,7 @@ function openCtxMenu(x,y,items){
   menu.style.top=Math.max(8,Math.min(y,innerHeight-mh-8))+'px';
 }
 function showMenuAt(cx,cy){
-  if($('editor').hidden)return;
+  if($('editor').hidden||cropFrame)return;
   const pt=canvasPt(cx,cy);
   const o=objectAt(pt);
   if(!o){
@@ -1247,7 +1259,7 @@ function showMenuAt(cx,cy){
   if(tool!=='select')setTool('select');
   if(o!==canvas.getActiveObject())canvas.setActiveObject(o);
   canvas.requestRenderAll();
-  openCtxMenu(cx,cy,[['tofront','最前面へ',()=>stackMove('front')],['forward','前面へ',()=>stackMove('forward')],['backward','背面へ',()=>stackMove('backward')],['toback','最背面へ',()=>stackMove('back')],null,['copy','コピー',copySelection],null,['trash','削除',()=>$('del').click(),1]]);
+  openCtxMenu(cx,cy,[['tofront','最前面へ',()=>stackMove('front')],['forward','前面へ',()=>stackMove('forward')],['backward','背面へ',()=>stackMove('backward')],['toback','最背面へ',()=>stackMove('back')],null,...(isImg(o)?[['crop','切り抜き',startCrop],null]:[]),['copy','コピー',copySelection],null,['trash','削除',()=>$('del').click(),1]]);
 }
 (function(){
   const el=canvas.upperCanvasEl,pts=new Set();
@@ -1521,6 +1533,7 @@ COLORS.forEach(h=>{
 bindPicker($('lbgc'),()=>{const L=layerOf(activeLayer);return L&&L.bg?L.color:'#ffffff'},c=>{bgPend=true;setBgColor(c)},()=>{if(bgPend){bgPend=false;snap()}});
 
 function resetTools(){
+  if(cropFrame)finishCrop('cancel');
   fg='#000000';bg='#ffffff';setLw(4);setShapeLw(4,true);
   $('fgb').style.background=fg;$('bgb').style.background=bg;pick('fg');
   setSwatch($('custom'),'#0067c0');setSwatch($('mcustom'),'#0067c0');$('fillm').value='outline';penType='pen';$('pent').value='pen';
@@ -1919,6 +1932,101 @@ $('imgIn').onchange=async e=>{
 };
 $('homeImg').onclick=()=>chooseImage('new');
 $('imgBtn').onclick=()=>chooseImage('add');
+const isImg=o=>!!o&&String(o.type).toLowerCase()==='image';
+function cropSrc(img){const e=img.getElement();return{w:e.naturalWidth||e.width||img.width,h:e.naturalHeight||e.height||img.height}}
+function cropLocalBox(f,img){
+  f.setCoords();
+  const inv=fabric.util.invertTransform(img.calcTransformMatrix());
+  const p=f.getCoords().map(q=>fabric.util.transformPoint(q,inv));
+  const xs=p.map(q=>q.x),ys=p.map(q=>q.y);
+  return[Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)];
+}
+function cropClamp(b,img){
+  const w=img.width,h=img.height,m=4;
+  const x0=Math.max(-w/2,Math.min(b[0],w/2-m)),y0=Math.max(-h/2,Math.min(b[1],h/2-m));
+  return[x0,y0,Math.min(w/2,Math.max(b[2],x0+m)),Math.min(h/2,Math.max(b[3],y0+m))];
+}
+function cropPlaceFrame(b){
+  const img=cropImg,f=cropFrame;
+  const c=fabric.util.transformPoint(new fabric.Point((b[0]+b[2])/2,(b[1]+b[3])/2),img.calcTransformMatrix());
+  f.set({width:b[2]-b[0],height:b[3]-b[1],scaleX:Math.abs(img.scaleX),scaleY:Math.abs(img.scaleY),angle:img.angle});
+  f.setPositionByOrigin(c,'center','center');
+  f.setCoords();
+}
+function startCrop(){
+  if(ro||cropFrame)return;
+  const o=canvas.getActiveObject();
+  if(!isImg(o)){toast('切り抜く画像を選択してください');return}
+  if(tool!=='select'){setTool('select');canvas.setActiveObject(o)}
+  cropImg=o;
+  const f=new fabric.Rect({
+    originX:'center',originY:'center',width:o.width,height:o.height,
+    fill:'rgba(0,103,192,.15)',strokeWidth:0,objectCaching:false,borderDashArray:[6,4],borderScaleFactor:2,
+    lockRotation:true,lockSkewingX:true,lockSkewingY:true,
+    transparentCorners:false,cornerColor:'#ffffff',cornerStrokeColor:'#0067c0',cornerStyle:'circle',cornerSize:16,touchCornerSize:44,borderColor:'#0067c0',
+    excludeFromExport:true,layer:layers[layers.length-1].id
+  });
+  f.setControlsVisibility({mtr:false});
+  cropFrame=f;
+  busy=true;canvas.add(f);busy=false;
+  canvas.forEachObject(x=>{if(x!==f){x.selectable=false;x.evented=false}});
+  canvas.selection=false;
+  cropPlaceFrame([-o.width/2,-o.height/2,o.width/2,o.height/2]);
+  canvas.setActiveObject(f);
+  canvas.requestRenderAll();
+  $('cropbar').hidden=false;
+}
+function finishCrop(mode){
+  const f=cropFrame,img=cropImg;
+  if(!f||!img)return;
+  let b=null;
+  if(mode==='ok')b=cropClamp(cropLocalBox(f,img),img);
+  else if(mode==='reset'){
+    const s=cropSrc(img),x=-img.width/2-img.cropX,y=-img.height/2-img.cropY;
+    b=[x,y,x+s.w,y+s.h];
+  }
+  const M=img.calcTransformMatrix();
+  cropFrame=null;cropImg=null;
+  busy=true;canvas.remove(f);busy=false;
+  $('cropbar').hidden=true;
+  canvas.selection=true;
+  applyLayerState();
+  if(b){
+    const nw=b[2]-b[0],nh=b[3]-b[1];
+    const changed=Math.abs(nw-img.width)>.5||Math.abs(nh-img.height)>.5||Math.abs(b[0]+img.width/2)>.5||Math.abs(b[1]+img.height/2)>.5;
+    if(changed){
+      const c=fabric.util.transformPoint(new fabric.Point((b[0]+b[2])/2,(b[1]+b[3])/2),M);
+      img.set({cropX:img.cropX+b[0]+img.width/2,cropY:img.cropY+b[1]+img.height/2,width:nw,height:nh});
+      img.setPositionByOrigin(c,'center','center');
+      img.setCoords();
+    }
+    canvas.setActiveObject(img);
+    if(changed)canvas.fire('object:modified',{target:img});
+  }else canvas.setActiveObject(img);
+  canvas.requestRenderAll();
+}
+canvas.on('object:modified',e=>{
+  if(cropFrame&&e.target===cropFrame)cropPlaceFrame(cropClamp(cropLocalBox(cropFrame,cropImg),cropImg));
+});
+const keepCropFrame=()=>{if(cropFrame&&canvas.getActiveObject()!==cropFrame)setTimeout(()=>{if(cropFrame)canvas.setActiveObject(cropFrame)},0)};
+canvas.on('selection:cleared',keepCropFrame);
+canvas.on('selection:created',keepCropFrame);
+canvas.on('selection:updated',keepCropFrame);
+$('cropBtn').onclick=startCrop;
+$('cropOk').onclick=()=>finishCrop('ok');
+$('cropCancel').onclick=()=>finishCrop('cancel');
+$('cropReset').onclick=()=>finishCrop('reset');
+document.addEventListener('pointerdown',e=>{
+  if(cropFrame&&e.target.closest&&e.target.closest('.ribbon,#mdock,.top,#msheet,#lpanel,#lbtn'))finishCrop('cancel');
+},true);
+addEventListener('keydown',e=>{
+  if(!cropFrame)return;
+  if(e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))return;
+  if(e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation();finishCrop('ok')}
+  else if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();finishCrop('cancel')}
+  else e.stopImmediatePropagation();
+},true);
+
 
 const EXT='.paint';
 const projName=t=>((t||'無題').replace(/[\\/:*?"<>|]/g,'_'))+EXT;
@@ -2225,7 +2333,7 @@ $('mundo').onclick=()=>$('undo').click();
 $('mredo').onclick=()=>$('redo').click();
 $('mmore').onclick=()=>toggleSheet('more');
 $('mclose').onclick=closeSheet;
-const ACTS={resize:'mresize',img:'imgBtn',save:'save',share:'share',del:'del',export:'pexp',import:'pimp'};
+const ACTS={resize:'mresize',img:'imgBtn',crop:'cropBtn',save:'save',share:'share',del:'del',export:'pexp',import:'pimp'};
 document.querySelectorAll('#msheet [data-act]').forEach(b=>b.onclick=()=>{$(ACTS[b.dataset.act]).click();closeSheet()});
 $('mzout').onclick=()=>$('zout').click();
 $('mzin').onclick=()=>$('zin').click();
@@ -2412,7 +2520,7 @@ async function onConflict(title,payload){
 async function pullCloud(){
   if(!cloud||pulling)return;
   const ao=canvas.getActiveObject();
-  if(drawing||canvas._isCurrentlyDrawing||(ao&&ao.isEditing)){
+  if(drawing||cropFrame||canvas._isCurrentlyDrawing||(ao&&ao.isEditing)){
     clearTimeout(pullDefer);
     pullDefer=setTimeout(()=>{if(!dirty)pullCloud()},400);
     return;
@@ -2612,7 +2720,7 @@ function rebaseOps(){
   const order=[];
   let i=0;
   canvas.getObjects().forEach(o=>{
-    if(o===drawing)return;
+    if(o===drawing||o===cropFrame)return;
     if(!o.oid)o.oid='g'+i;
     i++;
     sentMap.set(o.oid,JSON.stringify(canvas._toObject(o,'toObject')));
@@ -2637,7 +2745,7 @@ function sendOps(){
   if(!wsOpen()){liveEnds=[];return}
   const add=[],addIds=[],cur=new Map(),order=[];
   for(const o of canvas.getObjects()){
-    if(o===drawing)continue;
+    if(o===drawing||o===cropFrame)continue;
     if(!o.oid)o.oid=newOid();
     const j=JSON.stringify(canvas._toObject(o,'toObject'));
     cur.set(o.oid,j);
@@ -2728,7 +2836,7 @@ async function applyOpNow(m){
       known.concat(rest).forEach(o=>a.push(o));
     }
     reorder();
-    sentOrder=canvas.getObjects().filter(o=>o!==drawing&&sentMap.has(o.oid)).map(o=>o.oid).join(',');
+    sentOrder=canvas.getObjects().filter(o=>o!==drawing&&o!==cropFrame&&sentMap.has(o.oid)).map(o=>o.oid).join(',');
     if(m.n!==undefined){
       sentTitle=m.n;
       if(document.activeElement!==$('title'))$('title').value=m.n;
@@ -2749,7 +2857,7 @@ async function applyOpNow(m){
 function keepRemote(o){
   if(!cloud||!o||!o.c||!o.c.objects)return;
   const cur=new Map();
-  canvas.getObjects().forEach(x=>{if(x.oid&&x!==drawing)cur.set(x.oid,canvas._toObject(x,'toObject'))});
+  canvas.getObjects().forEach(x=>{if(x.oid&&x!==drawing&&x!==cropFrame)cur.set(x.oid,canvas._toObject(x,'toObject'))});
   const seen=new Set(),list=[];
   for(const x of o.c.objects){
     if(x.oid)seen.add(x.oid);
