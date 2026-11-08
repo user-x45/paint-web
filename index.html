@@ -348,6 +348,22 @@ body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{dis
 #msheet .mgrid.g4{grid-template-columns:repeat(7,1fr)}
 }
 @media (pointer:coarse){input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]),select,textarea{font-size:16px!important}.shr .lk input{height:44px}.shr .lk button,.shr .acts button,.mrow button{min-height:44px}.shr .acts{gap:8px}.shr .opt{min-height:44px}}
+html{-webkit-tap-highlight-color:transparent}
+.empty{text-wrap:balance;word-break:auto-phrase;line-height:1.7}
+.card{transition:border-color .15s,box-shadow .15s}
+.card:active{transform:scale(.98)}
+#mdock button,.pbtn,.mrow button,.shr .opt,.shr .acts button,.shr .lk button{transition:background-color .12s,transform .12s}
+#mdock button:active,.pbtn:active,.mrow button:active,.shr .opt:active:not(:disabled),.shr .acts button:active,.shr .lk button:active{transform:scale(.97)}
+#mdock button:active{background:var(--hover)}
+.shr .opt.on{box-shadow:0 0 0 1px var(--accent) inset}
+.shr .acts .danger:hover{background:rgba(209,52,56,.12)}
+@keyframes mpop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes mfade{from{opacity:0}to{opacity:1}}
+#modal{animation:mfade .15s ease-out}
+.mbox{animation:mpop .18s ease-out}
+#toast{animation:mfade .15s ease-out}
+@media (pointer:coarse),(max-width:720px){#mdock button{font-size:11px}#toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
