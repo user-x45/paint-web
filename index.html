@@ -350,7 +350,6 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 <button class="mbtn" data-act="share"><i class="ti ti-share" aria-hidden="true"></i>共有</button>
 <button class="mbtn" data-act="export"><i class="ti ti-file-export" aria-hidden="true"></i>ファイルに書き出し</button>
 <button class="mbtn" data-act="import"><i class="ti ti-file-import" aria-hidden="true"></i>ファイルを読み込む</button>
-<button class="mbtn" data-act="about"><i class="ti ti-info-circle" aria-hidden="true"></i>このアプリについて</button>
 <button class="mbtn" data-act="del"><i class="ti ti-trash" aria-hidden="true"></i>選択を削除</button>
 </div>
 <div class="mrowx"><label>表示</label><button class="ib" id="mzout" title="縮小" aria-label="縮小" data-ic="zoomout"></button><button class="mbtn" id="mzpct" style="flex:1;min-height:40px">100%</button><button class="ib" id="mzin" title="拡大" aria-label="拡大" data-ic="zoomin"></button></div>
@@ -1660,7 +1659,7 @@ $('mundo').onclick=()=>$('undo').click();
 $('mredo').onclick=()=>$('redo').click();
 $('mmore').onclick=()=>toggleSheet('more');
 $('mclose').onclick=closeSheet;
-const ACTS={img:'imgBtn',save:'save',share:'share',del:'del',export:'pexp',import:'pimp',about:'homeAbout'};
+const ACTS={img:'imgBtn',save:'save',share:'share',del:'del',export:'pexp',import:'pimp'};
 document.querySelectorAll('#msheet [data-act]').forEach(b=>b.onclick=()=>{$(ACTS[b.dataset.act]).click();closeSheet()});
 $('mzout').onclick=()=>$('zout').click();
 $('mzin').onclick=()=>$('zin').click();
