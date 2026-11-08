@@ -415,7 +415,7 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const fmt=t=>{const d=new Date(t);return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
 
 const baseToObject=fabric.Object.prototype.toObject;
-fabric.Object.prototype.toObject=function(p){const o=baseToObject.call(this,p);o.layer=this.layer;return o};
+fabric.Object.prototype.toObject=function(p){const o=baseToObject.call(this,p);o.layer=this.layer;o.oid=this.oid;return o};
 const isEraserStroke=o=>o.globalCompositeOperation==='destination-out';
 function makeLayeredRender(getLayers){
   return function(ctx,objects){
@@ -448,6 +448,8 @@ const hexA=(c,a)=>{const h=c.replace('#','');const n=parseInt(h.length===3?h.rep
 let tool='pen',fg='#000000',bg='#ffffff',target='fg',lw=4,drawing=null,start=null,hist=[],redoS=[],busy=false,layers=[],activeLayer=null;
 let curId=null,curCreated=0,dirty=false,saveTimer=null,chain=Promise.resolve();
 let cloud=null,ro=false,pulling=false,stopped=null;
+let sentMap=new Map(),sentOrder='',sentLayers='',sentTitle='',mine=new Set(),opQ=false,needPull=false,fullFlag=false,opChain=Promise.resolve(),liveSid=null,livePts=[],liveSent=0,liveStyle=null,liveT=null,liveEnds=[],liveDrawQ=false,localT=null;
+const liveIn=new Map();
 const hints={select:'オブジェクトをクリックして移動・変形します。選択中に色を選ぶと、図形・文字・線の色が変わります。',eraser:'ドラッグで選択中のレイヤーの絵を消します。図形はクリックで削除。',pen:'ドラッグで自由に描きます。ペンの種類を切り替えられます。',text:'キャンバスをクリックして文字を入力します。もう一度「文字」を押すとフォントなどを変更できます。',line:'ドラッグで直線を描きます。',arrow:'ドラッグで矢印を描きます。',rect:'ドラッグで四角形を描きます。',ellipse:'ドラッグで楕円を描きます。'};
 const CW=1152,CH=648;
 const ZMIN=0.1,ZMAX=8;
@@ -633,7 +635,7 @@ $('lw').oninput=e=>setLw(+e.target.value);
 $('mlw').oninput=e=>setLw(+e.target.value);
 
 function setSaved(t){$('saved').textContent=t}
-function scheduleSave(){if(!curId||ro)return;dirty=true;setSaved('自動保存: 変更あり…');clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,500)}
+function scheduleSave(){if(!curId||ro)return;dirty=true;setSaved('自動保存: 変更あり…');clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,cloud&&wsOpen()?1500:500);queueOps()}
 function saveNow(){clearTimeout(saveTimer);chain=chain.then(doSave);return chain}
 const currentPayload=()=>({w:canvas.width,h:canvas.height,c:canvas.toJSON(),layers:layers.map(l=>({...l})),active:activeLayer});
 const thumbNow=()=>canvas.toDataURL({format:'png',multiplier:Math.min(1,360/canvas.width)});
@@ -650,7 +652,7 @@ async function doSave(){
     const payload=currentPayload(),thumb=thumbNow(),now=Date.now(),title=$('title').value.trim();
     dirty=false;
     if(cloud&&cloud.role!=='view'){
-      try{await pushCloud(title,payload)}
+      try{await pushCloud(title,payload,wsOpen())}
       catch(e){
         if(e.status===409){if(!await onConflict(title,payload))return}
         else if(e.status===403||e.status===404){handleRevoked();return}
@@ -662,6 +664,7 @@ async function doSave(){
       dirty=true;clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,8000);
       setSaved(cloud.owner?'自動保存: 端末に保存済み（サーバー未同期・再試行中）':'自動保存: サーバーに保存できません。再試行中…');
     }else setSaved('自動保存: '+fmt(now).slice(-5)+' 保存済み'+(cloud?'（同期済み）':''));
+    if(needPull&&!dirty){needPull=false;pullCloud()}
   }catch(e){
     dirty=true;setSaved('自動保存に失敗しました（容量不足の可能性）');
   }
@@ -674,11 +677,12 @@ function snapshot(){return JSON.stringify({c:canvas.toJSON(),layers:layers,activ
 function snap(){if(busy||ro)return;hist.push(snapshot());if(hist.length>60)hist.shift();redoS=[];scheduleSave()}
 function load(s){
   const o=JSON.parse(s);
+  keepRemote(o);
   layers=o.layers.map(l=>({...l}));activeLayer=o.active;
   busy=true;
   canvas.loadFromJSON(o.c,()=>{canvas.renderAll();renderLayers();setTool(tool);busy=false;scheduleSave();loadUsedFonts(canvas.getObjects()).then(r=>{if(r)canvas.requestRenderAll()})});
 }
-canvas.on('object:added',e=>{if(!e.target.layer)e.target.layer=drawLayerId();reorder()});
+canvas.on('object:added',e=>{if(!e.target.layer)e.target.layer=drawLayerId();if(!e.target.oid)e.target.oid=newOid();reorder()});
 canvas.on('object:added',snap);canvas.on('object:modified',snap);canvas.on('object:removed',snap);
 $('undo').onclick=()=>{if(hist.length>1){redoS.push(hist.pop());load(hist[hist.length-1])}};
 $('redo').onclick=()=>{if(redoS.length){const s=redoS.pop();hist.push(s);load(s)}};
@@ -1321,7 +1325,7 @@ function resetTools(){
   renderTextSheet();syncMobileColor();updateMobile();
 }
 function showEditor(){resetTools();closeSheet();setPanel(false);$('home').hidden=true;$('editor').hidden=false;zoom=1;$('desk').scrollLeft=0;$('desk').scrollTop=0;fitRibbon();document.title='ペイント - '+($('title').value||'無題')}
-function resetHist(){hist=[snapshot()];redoS=[]}
+function resetHist(){rebaseOps();hist=[snapshot()];redoS=[]}
 function newDrawing(){
   cloud=null;stopped=null;applyRole();
   curId=uid();curCreated=Date.now();dirty=false;
@@ -1884,8 +1888,9 @@ function applyData(d,done){
 }
 
 async function pushCloud(title,payload,force){
-  const r=await api('PUT','/api/d/'+cloud.id,{key:cloud.key,query:{title,rev:cloud.rev,force:force?1:0,cid},body:JSON.stringify(payload)});
+  const r=await api('PUT','/api/d/'+cloud.id,{key:cloud.key,query:{title,rev:cloud.rev,force:force?1:0,cid,full:fullFlag?1:0},body:JSON.stringify(payload)});
   cloud.rev=r.rev;
+  fullFlag=false;
 }
 async function onConflict(title,payload){
   const keep=await uiDialog({msg:'他の人がこの絵を先に更新しています。自分の変更で上書きしますか？',ok:'自分の変更で上書き',cancel:'最新を読み込む'});
@@ -1947,6 +1952,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll(true)
 
 function closeSocket(){
   clearTimeout(wsT);clearInterval(wsPing);
+  liveIn.clear();queueLiveDraw();
   const old=ws;ws=null;
   if(old){try{old.close()}catch(e){}}
 }
@@ -1972,6 +1978,7 @@ function openSocket(){
   sock.onclose=ev=>{
     if(ws!==sock)return;
     ws=null;clearInterval(wsPing);
+    liveIn.clear();queueLiveDraw();
     if(ev.code===4403||ev.code===4404){handleRevoked();return}
     wsT=setTimeout(()=>{if(cloud&&cloud.id===c.id&&cloud.key===c.key&&!ws)openSocket()},Math.min(15000,1000*Math.pow(2,wsTry++)));
   };
@@ -1984,13 +1991,262 @@ function syncSocket(){
   wsTry=0;
   if(want)openSocket();
 }
+function wantPull(){
+  if(pulling)return;
+  if(busy){setTimeout(wantPull,200);return}
+  if(dirty){needPull=true;return}
+  pullCloud();
+}
 function onSocket(m){
   if(!cloud)return;
+  if(m.t==='op'){if(m.by!==cid)applyOp(m);return}
+  if(m.t==='live'){if(m.by!==cid)onLive(m);return}
   if(m.t==='hello'||m.t==='role'){
     if(!cloud.owner&&m.role!==cloud.role){cloud.role=m.role;applyRole()}
     if(cloud.owner&&m.mode)cloud.mode=m.mode;
   }
-  if((m.t==='hello'||m.t==='rev')&&m.by!==cid&&m.rev>cloud.rev&&!dirty)pullCloud();
+  if(m.t==='hello'&&m.rev>cloud.rev)wantPull();
+  if(m.t==='rev'&&m.by!==cid){
+    if(m.full)wantPull();
+    else if(m.rev>cloud.rev)cloud.rev=m.rev;
+  }
+}
+
+const wsOpen=()=>!!ws&&ws.readyState===1;
+function sendWs(s){
+  if(!wsOpen())return false;
+  try{ws.send(s);return true}catch(e){return false}
+}
+function newOid(){return uid()+Math.random().toString(36).slice(2,6)}
+const liveCv=document.createElement('canvas');
+liveCv.width=CW;liveCv.height=CH;
+liveCv.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none';
+canvas.wrapperEl.appendChild(liveCv);
+function queueLiveDraw(){
+  if(liveDrawQ)return;
+  liveDrawQ=true;
+  requestAnimationFrame(()=>{
+    liveDrawQ=false;
+    const c=liveCv.getContext('2d');
+    c.clearRect(0,0,CW,CH);
+    liveIn.forEach(s=>{
+      const p=s.p;
+      if(p.length<2)return;
+      c.save();
+      c.strokeStyle=s.c;c.lineWidth=s.w;c.lineCap=s.k;c.lineJoin='round';
+      c.beginPath();
+      c.moveTo(p[0],p[1]);
+      if(p.length<4)c.lineTo(p[0]+.01,p[1]);
+      else{
+        for(let i=2;i<p.length-2;i+=2)c.quadraticCurveTo(p[i],p[i+1],(p[i]+p[i+2])/2,(p[i+1]+p[i+3])/2);
+        c.lineTo(p[p.length-2],p[p.length-1]);
+      }
+      c.stroke();
+      c.restore();
+    });
+  });
+}
+function onLive(m){
+  if(m.e){liveIn.delete(m.s);queueLiveDraw();return}
+  let s=liveIn.get(m.s);
+  if(!s){s={p:[],c:'#000',w:4,k:'round',t:0};liveIn.set(m.s,s)}
+  if(m.c)s.c=m.c;
+  if(m.w)s.w=m.w;
+  if(m.k)s.k=m.k;
+  s.t=Date.now();
+  if(m.p)for(const v of m.p)s.p.push(v);
+  queueLiveDraw();
+}
+setInterval(()=>{
+  const n=Date.now();let ch=false;
+  liveIn.forEach((s,k)=>{if(n-s.t>6000){liveIn.delete(k);ch=true}});
+  if(ch)queueLiveDraw();
+},2000);
+function liveStart(){
+  liveSid=null;
+  if(ro||!cloud||!wsOpen()||!canvas.isDrawingMode||tool==='eraser')return;
+  const t=PENS[penType];
+  if(!t||t.spray||t.dots)return;
+  const b=canvas.freeDrawingBrush;
+  liveSid=newOid();livePts=[];liveSent=0;
+  liveStyle={c:b.color,w:b.width,k:b.strokeLineCap||'round'};
+}
+function liveAdd(o){
+  if(!liveSid||!o||!o.e)return;
+  const p=canvas.getPointer(o.e);
+  livePts.push(Math.round(p.x*10)/10,Math.round(p.y*10)/10);
+  if(!liveT)liveT=setTimeout(liveFlush,30);
+}
+function liveFlush(){
+  liveT=null;
+  if(!liveSid||liveSent>=livePts.length)return;
+  const pts=livePts.slice(liveSent);
+  liveSent=livePts.length;
+  sendWs('{"t":"live","by":"'+cid+'","s":"'+liveSid+'","c":'+JSON.stringify(liveStyle.c)+',"w":'+liveStyle.w+',"k":'+JSON.stringify(liveStyle.k)+',"p":'+JSON.stringify(pts)+'}');
+}
+function liveStop(){
+  if(!liveSid)return;
+  clearTimeout(liveT);
+  liveFlush();
+  liveEnds.push(liveSid);
+  liveSid=null;
+  queueOps();
+}
+canvas.on('mouse:down',o=>{liveStart();liveAdd(o)});
+canvas.on('mouse:move',liveAdd);
+canvas.on('mouse:up',liveStop);
+
+function rebaseOps(){
+  sentMap=new Map();mine=new Set();
+  const order=[];
+  let i=0;
+  canvas.getObjects().forEach(o=>{
+    if(o===drawing)return;
+    if(!o.oid)o.oid='g'+i;
+    i++;
+    sentMap.set(o.oid,JSON.stringify(canvas._toObject(o,'toObject')));
+    mine.add(o.oid);
+    order.push(o.oid);
+  });
+  sentOrder=order.join(',');
+  sentLayers=JSON.stringify(layers);
+  sentTitle=$('title').value.trim();
+  liveIn.clear();
+  queueLiveDraw();
+}
+function queueOps(d){
+  if(opQ)return;
+  opQ=true;
+  setTimeout(sendOps,d||16);
+}
+function sendOps(){
+  if(!cloud||!curId||ro){opQ=false;liveEnds=[];return}
+  if(busy||pulling){setTimeout(sendOps,40);return}
+  opQ=false;
+  if(!wsOpen()){liveEnds=[];return}
+  const add=[],addIds=[],cur=new Map(),order=[];
+  for(const o of canvas.getObjects()){
+    if(o===drawing)continue;
+    if(!o.oid)o.oid=newOid();
+    const j=JSON.stringify(canvas._toObject(o,'toObject'));
+    cur.set(o.oid,j);
+    order.push(o.oid);
+    if(sentMap.get(o.oid)!==j){add.push(j);addIds.push(o.oid)}
+  }
+  const del=[];
+  sentMap.forEach((v,k)=>{if(!cur.has(k))del.push(k)});
+  const ord=order.join(','),ls=JSON.stringify(layers),title=$('title').value.trim();
+  const parts=[];
+  if(add.length)parts.push('"a":['+add.join(',')+']');
+  if(del.length)parts.push('"d":'+JSON.stringify(del));
+  if(ord!==sentOrder)parts.push('"r":'+JSON.stringify(order));
+  if(ls!==sentLayers)parts.push('"l":'+ls);
+  if(title!==sentTitle)parts.push('"n":'+JSON.stringify(title));
+  if(parts.length){
+    const msg='{"t":"op","by":"'+cid+'",'+parts.join(',')+'}';
+    if(msg.length>4000000)fullFlag=true;
+    else sendWs(msg);
+    addIds.forEach(id=>mine.add(id));
+    sentMap=cur;sentOrder=ord;sentLayers=ls;sentTitle=title;
+  }
+  const ends=liveEnds;liveEnds=[];
+  ends.forEach(s=>sendWs('{"t":"live","by":"'+cid+'","s":"'+s+'","e":1}'));
+}
+['object:moving','object:scaling','object:rotating','object:skewing'].forEach(n=>canvas.on(n,()=>{
+  if(!cloud||ro||!wsOpen())return;
+  queueOps(50);
+}));
+
+const idle=()=>new Promise(r=>{const t=()=>(busy||pulling)?setTimeout(t,30):r();t()});
+function applyOp(m){opChain=opChain.then(()=>applyOpNow(m)).catch(()=>{})}
+async function applyOpNow(m){
+  await idle();
+  if(!cloud)return;
+  let objs=[];
+  if(m.a&&m.a.length)objs=await new Promise(r=>fabric.util.enlivenObjects(m.a,r,'fabric'));
+  await idle();
+  if(!cloud)return;
+  const act=new Set(canvas.getActiveObjects());
+  const ao=canvas.getActiveObject();
+  const hold=!!canvas._currentTransform||!!(ao&&ao.isEditing);
+  let dropped=false;
+  const free=o=>{
+    if(!act.has(o))return true;
+    if(hold)return false;
+    if(!dropped){canvas.discardActiveObject();dropped=true}
+    return true;
+  };
+  busy=true;
+  try{
+    if(m.l){
+      layers=m.l.map(l=>({...l}));
+      sentLayers=JSON.stringify(layers);
+      if(!layers.some(l=>l.id===activeLayer)){
+        const f=layers.filter(l=>!l.bg);
+        activeLayer=(f[f.length-1]||layers[layers.length-1]).id;
+      }
+    }
+    const byId=new Map();
+    canvas.getObjects().forEach(o=>{if(o.oid)byId.set(o.oid,o)});
+    (m.d||[]).forEach(id=>{
+      const o=byId.get(id);
+      if(o){
+        if(!free(o))return;
+        canvas.remove(o);byId.delete(id);
+      }
+      sentMap.delete(id);mine.delete(id);
+    });
+    objs.forEach(n=>{
+      if(!n.oid)return;
+      const old=byId.get(n.oid);
+      if(old&&!free(old))return;
+      let idx=-1;
+      if(old){idx=canvas._objects.indexOf(old);canvas.remove(old)}
+      if(idx>=0)canvas.insertAt(n,idx);else canvas.add(n);
+      byId.set(n.oid,n);
+      sentMap.set(n.oid,JSON.stringify(canvas._toObject(n,'toObject')));
+      mine.delete(n.oid);
+    });
+    if(m.r){
+      const pos=new Map();
+      m.r.forEach((id,i)=>pos.set(id,i));
+      const a=canvas._objects;
+      const known=a.filter(o=>pos.has(o.oid)).sort((x,y)=>pos.get(x.oid)-pos.get(y.oid));
+      const rest=a.filter(o=>!pos.has(o.oid));
+      a.length=0;
+      known.concat(rest).forEach(o=>a.push(o));
+    }
+    reorder();
+    sentOrder=canvas.getObjects().filter(o=>o!==drawing&&sentMap.has(o.oid)).map(o=>o.oid).join(',');
+    if(m.n!==undefined){
+      sentTitle=m.n;
+      if(document.activeElement!==$('title'))$('title').value=m.n;
+      document.title='ペイント - '+(m.n||'無題');
+    }
+    applyLayerState();
+    if(m.l)renderLayers();
+    canvas.requestRenderAll();
+    if(objs.length)loadUsedFonts(objs).then(r=>{if(r)canvas.requestRenderAll()});
+  }finally{
+    busy=false;
+  }
+  if(cloud&&cloud.owner){
+    clearTimeout(localT);
+    localT=setTimeout(()=>{if(cloud&&cloud.owner&&!dirty)persistLocalNow().catch(()=>{})},3000);
+  }
+}
+function keepRemote(o){
+  if(!cloud||!o||!o.c||!o.c.objects)return;
+  const cur=new Map();
+  canvas.getObjects().forEach(x=>{if(x.oid&&x!==drawing)cur.set(x.oid,canvas._toObject(x,'toObject'))});
+  const seen=new Set(),list=[];
+  for(const x of o.c.objects){
+    if(x.oid)seen.add(x.oid);
+    if(!x.oid||mine.has(x.oid))list.push(x);
+    else if(cur.has(x.oid))list.push(cur.get(x.oid));
+  }
+  cur.forEach((v,k)=>{if(!seen.has(k)&&!mine.has(k))list.push(v)});
+  o.c.objects=list;
 }
 
 async function openShared(id,key){
