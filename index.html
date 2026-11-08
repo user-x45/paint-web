@@ -1798,6 +1798,8 @@ $('mimg').onclick=()=>$('imgBtn').click();
 $('mdel').onclick=()=>$('del').click();
 addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 updateMobile();syncMobileColor();
+let ws=null,wsT=null,wsPing=null,wsTry=0,wsFor=null,pullDefer=null;
+const cid=uid();
 const API=(window.PAINT_API||'').replace(/\/+$/,'');
 const hasApi=!!API&&!/YOUR_/.test(API);
 async function api(method,path,o={}){
@@ -1850,6 +1852,7 @@ function applyRole(){
     canvas.skipTargetFind=false;
     if(was&&curId){setTool('pen');setSaved(cloud?'共有リンクで編集中':'自動保存: 保存済み')}
   }
+  syncSocket();
 }
 ['keydown','paste','cut','drop','contextmenu'].forEach(t=>addEventListener(t,e=>{
   if(!ro||(t==='keydown'&&(e.key==='Escape'||e.ctrlKey||e.metaKey)))return;
@@ -1870,7 +1873,7 @@ function applyData(d,done){
 }
 
 async function pushCloud(title,payload,force){
-  const r=await api('PUT','/api/d/'+cloud.id,{key:cloud.key,query:{title,rev:cloud.rev,force:force?1:0},body:JSON.stringify(payload)});
+  const r=await api('PUT','/api/d/'+cloud.id,{key:cloud.key,query:{title,rev:cloud.rev,force:force?1:0,cid},body:JSON.stringify(payload)});
   cloud.rev=r.rev;
 }
 async function onConflict(title,payload){
@@ -1881,6 +1884,12 @@ async function onConflict(title,payload){
 }
 async function pullCloud(){
   if(!cloud||pulling)return;
+  const ao=canvas.getActiveObject();
+  if(drawing||canvas._isCurrentlyDrawing||(ao&&ao.isEditing)){
+    clearTimeout(pullDefer);
+    pullDefer=setTimeout(()=>{if(!dirty)pullCloud()},400);
+    return;
+  }
   pulling=true;
   try{
     const r=await api('GET','/api/d/'+cloud.id,{key:cloud.key});
@@ -1906,12 +1915,14 @@ function handleRevoked(){
     uiAlert('この共有は停止されたか、アクセス権が変更されました。').then(()=>{if(curId)goHome()});
   }else if(cloud){
     cloud=null;
+    applyRole();
     persistLocalNow().catch(()=>{});
     uiAlert('サーバー上の共有が見つかりません。この絵は共有されていない状態に戻しました。');
   }
 }
-async function poll(){
-  if(!cloud||!curId||document.hidden||busy||pulling)return;
+async function poll(force){
+  if(!cloud||!curId||busy||pulling)return;
+  if(!force&&(document.hidden||(ws&&ws.readyState===1)))return;
   try{
     const r=await api('GET','/api/d/'+cloud.id+'/rev',{key:cloud.key});
     if(!cloud.owner&&r.role!==cloud.role){cloud.role=r.role;applyRole()}
@@ -1921,8 +1932,56 @@ async function poll(){
     if(e.status===403||e.status===404)handleRevoked();
   }
 }
-setInterval(poll,8000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll()});
+setInterval(()=>poll(),8000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll(true)});
+
+function closeSocket(){
+  clearTimeout(wsT);clearInterval(wsPing);
+  const old=ws;ws=null;
+  if(old){try{old.close()}catch(e){}}
+}
+function openSocket(){
+  if(!cloud||!hasApi)return;
+  const c=cloud;
+  let sock;
+  try{sock=new WebSocket(API.replace(/^http/,'ws')+'/api/d/'+c.id+'/ws',['paint',c.key])}
+  catch(e){return}
+  ws=sock;
+  sock.onopen=()=>{
+    wsTry=0;
+    clearInterval(wsPing);
+    wsPing=setInterval(()=>{try{sock.send('ping')}catch(e){}},30000);
+    poll(true);
+  };
+  sock.onmessage=e=>{
+    if(e.data==='pong')return;
+    let m=null;
+    try{m=JSON.parse(e.data)}catch(x){}
+    if(m)onSocket(m);
+  };
+  sock.onclose=ev=>{
+    if(ws!==sock)return;
+    ws=null;clearInterval(wsPing);
+    if(ev.code===4403||ev.code===4404){handleRevoked();return}
+    wsT=setTimeout(()=>{if(cloud&&cloud.id===c.id&&cloud.key===c.key&&!ws)openSocket()},Math.min(15000,1000*Math.pow(2,wsTry++)));
+  };
+}
+function syncSocket(){
+  const want=cloud&&curId?cloud.id+'.'+cloud.key:null;
+  if(want===wsFor)return;
+  closeSocket();
+  wsFor=want;
+  wsTry=0;
+  if(want)openSocket();
+}
+function onSocket(m){
+  if(!cloud)return;
+  if(m.t==='hello'||m.t==='role'){
+    if(!cloud.owner&&m.role!==cloud.role){cloud.role=m.role;applyRole()}
+    if(cloud.owner&&m.mode)cloud.mode=m.mode;
+  }
+  if((m.t==='hello'||m.t==='rev')&&m.by!==cid&&m.rev>cloud.rev&&!dirty)pullCloud();
+}
 
 async function openShared(id,key){
   let r;
