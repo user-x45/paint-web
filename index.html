@@ -167,7 +167,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .top #tbToggle{display:none}
 .top .ib{padding:0;width:34px;height:34px}
 .top .ib i{margin:0;font-size:20px}
-#home_btn{order:0}#title{order:1}#mundo{order:2}#mredo{order:3}#mimg{order:4}#mdel{order:5}#save{order:6;margin-left:auto}#share{order:7}#mmore{order:8;display:none}
+#home_btn{order:0}#title{order:1}#mundo{order:2}#mredo{order:3}#mimg{order:4}#mdel{order:5}#save{order:6;margin-left:auto}#share{order:7}#mmore{order:8;display:none}#pexp{order:9}#pimp{order:10}
 #editor{position:relative}
 #mdock{display:flex;flex-direction:column;flex:none;width:64px;gap:2px;padding:6px 4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:auto}
 #mdock button{flex:none;height:56px;border:0;border-radius:8px;background:none;color:var(--ink);font:inherit;font-size:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;position:relative;cursor:pointer}
@@ -229,16 +229,32 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .mfont{min-height:52px;gap:2px;padding:6px 4px}
 .mfont .s{font-size:18px;line-height:1.3;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .mfont .n{font-size:10px;color:var(--muted)}
+@media (max-width:720px){
+#home{padding:16px 14px 28px}
+.hhead{gap:10px;margin-bottom:16px}
+.hhead h1{flex:1 0 100%;font-size:24px;letter-spacing:.02em}
+.hhead .pbtn{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:76px;padding:10px 6px;font-size:12px;line-height:1.3;text-align:center;border-radius:12px}
+.hhead .pbtn i{margin:0;font-size:24px}
+.sub{font-size:12px;margin:0 0 10px}
+#grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card{border-radius:12px}
+.card.new{display:none}
+.card .meta{padding:8px 10px 10px}
+.card .meta b{font-size:13px}
+.empty{text-align:center;padding:40px 12px}
+}
 </style>
 </head>
 <body>
 <input type="file" id="imgIn" accept="image/*" hidden>
+<input type="file" id="prjIn" accept=".paint" hidden>
 
 <div id="home">
   <div class="hhead">
     <h1>ペイント</h1>
     <button class="pbtn" id="homeNew"><i class="ti ti-plus" aria-hidden="true"></i>新規作成</button>
     <button class="pbtn sec" id="homeImg"><i class="ti ti-photo-plus" aria-hidden="true"></i>画像から新規作成</button>
+    <button class="pbtn sec" id="homePrj"><i class="ti ti-file-import" aria-hidden="true"></i>ファイルを読み込む</button>
   </div>
   <p class="sub">保存した絵（このブラウザに自動保存されています）</p>
   <div id="grid"></div>
@@ -246,7 +262,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 </div>
 
 <div id="editor" hidden>
-<div class="top"><button id="home_btn"><i class="ti ti-arrow-left" aria-hidden="true"></i>ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save">画像として保存</button><button id="share">共有</button><button class="ib mtop" id="mundo" title="元に戻す" aria-label="元に戻す" data-ic="undo"></button><button class="ib mtop" id="mredo" title="やり直し" aria-label="やり直し" data-ic="redo"></button><button class="ib dtop" id="mimg" title="画像を読み込む" aria-label="画像を読み込む" data-ic="photo"></button><button class="ib dtop" id="mdel" title="選択を削除 (Delete)" aria-label="選択を削除" data-ic="trash"></button><button class="ib mtop" id="mmore" title="その他" aria-label="その他" data-ic="more"></button><button class="ib" id="tbToggle" title="ツールバーを隠す" aria-label="ツールバーを隠す" aria-expanded="true" data-ic="up"></button></div>
+<div class="top"><button id="home_btn"><i class="ti ti-arrow-left" aria-hidden="true"></i>ホーム</button><input id="title" aria-label="タイトル" maxlength="40" placeholder="無題"><button id="save">画像として保存</button><button id="share">共有</button><button class="ib mtop" id="mundo" title="元に戻す" aria-label="元に戻す" data-ic="undo"></button><button class="ib mtop" id="mredo" title="やり直し" aria-label="やり直し" data-ic="redo"></button><button class="ib dtop" id="mimg" title="画像を読み込む" aria-label="画像を読み込む" data-ic="photo"></button><button class="ib dtop" id="mdel" title="選択を削除 (Delete)" aria-label="選択を削除" data-ic="trash"></button><button class="ib mtop" id="mmore" title="その他" aria-label="その他" data-ic="more"></button><button class="ib dtop" id="pexp" title="ファイルに書き出し (.paint)" aria-label="ファイルに書き出し" data-ic="fexport"></button><button class="ib dtop" id="pimp" title="ファイルを読み込む (.paint)" aria-label="ファイルを読み込む" data-ic="fimport"></button><button class="ib" id="tbToggle" title="ツールバーを隠す" aria-label="ツールバーを隠す" aria-expanded="true" data-ic="up"></button></div>
 <div class="ribbon">
   <div class="g"><div class="row">
     <button class="ib" id="undo" title="元に戻す" data-ic="undo"></button>
@@ -319,6 +335,8 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 <button class="mbtn" data-act="img"><i class="ti ti-photo-plus" aria-hidden="true"></i>画像を読み込む</button>
 <button class="mbtn" data-act="save"><i class="ti ti-download" aria-hidden="true"></i>画像として保存</button>
 <button class="mbtn" data-act="share"><i class="ti ti-share" aria-hidden="true"></i>共有</button>
+<button class="mbtn" data-act="export"><i class="ti ti-file-export" aria-hidden="true"></i>ファイルに書き出し</button>
+<button class="mbtn" data-act="import"><i class="ti ti-file-import" aria-hidden="true"></i>ファイルを読み込む</button>
 <button class="mbtn" data-act="del"><i class="ti ti-trash" aria-hidden="true"></i>選択を削除</button>
 </div>
 <div class="mrowx"><label>表示</label><button class="ib" id="mzout" title="縮小" aria-label="縮小" data-ic="zoomout"></button><button class="mbtn" id="mzpct" style="flex:1;min-height:40px">100%</button><button class="ib" id="mzin" title="拡大" aria-label="拡大" data-ic="zoomin"></button></div>
@@ -328,7 +346,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 
 <script>
 const $=id=>document.getElementById(id);
-const P={select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out',dblarrow:'ti ti-arrows-horizontal',roundrect:'ti ti-square-rounded',triangle:'ti ti-triangle',diamond:'ti ti-diamond',pentagon:'ti ti-pentagon',hexagon:'ti ti-hexagon',star:'ti ti-star',heart:'ti ti-heart',bubble:'ti ti-message',cross:'ti ti-plus',tofront:'ti ti-arrow-bar-up',forward:'ti ti-arrow-up',backward:'ti ti-arrow-down',toback:'ti ti-arrow-bar-down',copy:'ti ti-copy',paste:'ti ti-clipboard'};
+const P={select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out',dblarrow:'ti ti-arrows-horizontal',roundrect:'ti ti-square-rounded',triangle:'ti ti-triangle',diamond:'ti ti-diamond',pentagon:'ti ti-pentagon',hexagon:'ti ti-hexagon',star:'ti ti-star',heart:'ti ti-heart',bubble:'ti ti-message',cross:'ti ti-plus',tofront:'ti ti-arrow-bar-up',forward:'ti ti-arrow-up',backward:'ti ti-arrow-down',toback:'ti ti-arrow-bar-down',copy:'ti ti-copy',paste:'ti ti-clipboard',fexport:'ti ti-file-export',fimport:'ti ti-file-import'};
 const ic=n=>'<i class="'+P[n]+'" aria-hidden="true"></i>';
 document.querySelectorAll('[data-ic]').forEach(b=>{b.innerHTML=ic(b.dataset.ic)});
 
@@ -832,8 +850,13 @@ canvas.on('object:rotating',e=>{
   if(!t)return;
   let a=((t.angle%360)+360)%360;
   const r=nearestRight(a);
-  if(r.hit){t.set('angle',r.n);a=r.n;t.setCoords()}
-  const c=t.getCenterPoint(),b=t.getBoundingRect(true,true);
+  const c=t.getCenterPoint();
+  if(r.hit){
+    t.set('angle',r.n);a=r.n;
+    t.setPositionByOrigin(c,'center','center');
+    t.setCoords();
+  }
+  const b=t.getBoundingRect(true,true);
   guideLines=[];
   guideLabels=[{x:c.x,y:b.top,text:angleText(a),hit:r.hit}];
   canvas.requestRenderAll();
@@ -1375,7 +1398,7 @@ function openMenu(btn,m){
   closeMenu();if(was)return;
   btn.classList.add('open');
   const menu=document.createElement('div');menu.id='menu';menu.setAttribute('role','menu');
-  [['名前を変更',renameDrawing],['画像として保存',downloadDrawing],['共有',shareDrawing],['コピー',copyDrawing],['削除',deleteDrawing,1]].forEach(([l,fn,danger])=>{
+  [['名前を変更',renameDrawing],['画像として保存',downloadDrawing],['ファイルに書き出し',exportSaved],['共有',shareDrawing],['コピー',copyDrawing],['削除',deleteDrawing,1]].forEach(([l,fn,danger])=>{
     const b=document.createElement('button');b.textContent=l;b.setAttribute('role','menuitem');
     if(danger)b.className='danger';
     b.onclick=e=>{e.stopPropagation();closeMenu();fn(m)};
@@ -1389,6 +1412,7 @@ function openMenu(btn,m){
 }
 let menuAt=0;
 document.addEventListener('click',e=>{if(!e.target.closest('#menu')&&Date.now()-menuAt>400)closeMenu()});
+document.addEventListener('pointerdown',e=>{if(!$('menu')||e.target.closest('#menu')||e.target.closest('.card .x'))return;if(Date.now()-menuAt>400)closeMenu()},true);
 addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
 addEventListener('resize',closeMenu);
 $('home').addEventListener('scroll',closeMenu);
@@ -1469,6 +1493,44 @@ $('imgIn').onchange=async e=>{
 };
 $('homeImg').onclick=()=>chooseImage('new');
 $('imgBtn').onclick=()=>chooseImage('add');
+
+const EXT='.paint';
+const projName=t=>((t||'無題').replace(/[\\/:*?"<>|]/g,'_'))+EXT;
+const packDrawing=(title,d,thumb)=>JSON.stringify({app:'paint',v:1,title:title||'',w:d.w,h:d.h,c:d.c,layers:d.layers,active:d.active,thumb:thumb||''});
+function downloadText(txt,name){
+  const u=URL.createObjectURL(new Blob([txt],{type:'application/octet-stream'})),a=document.createElement('a');
+  a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);
+}
+function exportCurrent(){
+  canvas.discardActiveObject();canvas.renderAll();
+  const title=$('title').value.trim();
+  const thumb=canvas.toDataURL({format:'png',multiplier:Math.min(1,360/canvas.width)});
+  downloadText(packDrawing(title,{w:canvas.width,h:canvas.height,c:canvas.toJSON(),layers:layers.map(l=>({...l})),active:activeLayer},thumb),projName(title));
+}
+async function exportSaved(m){
+  try{
+    const d=await getData(m.id);
+    if(!d){uiAlert('この絵のデータが見つかりません。');return}
+    downloadText(packDrawing(m.title,d,m.thumb),projName(m.title));
+  }catch(e){toast('書き出しに失敗しました')}
+}
+async function importProject(f){
+  let o=null;
+  try{o=JSON.parse(await f.text())}catch(e){}
+  if(!o||o.app!=='paint'||!o.c||!Array.isArray(o.layers)){toast('読み込めないファイルです');return}
+  const id=uid(),now=Date.now();
+  const title=String(o.title||f.name.replace(/\.[^.]+$/,'')).slice(0,40);
+  try{
+    await saveNow();
+    await putDrawing({id,title,created:now,updated:now,thumb:typeof o.thumb==='string'?o.thumb:''},{id,w:o.w||CW,h:o.h||CH,c:o.c,layers:o.layers,active:o.active});
+  }catch(e){uiAlert('読み込めませんでした。保存容量が不足している可能性があります。');return}
+  await openDrawing(id);
+}
+const pickProject=()=>{const f=$('prjIn');f.value='';f.click()};
+$('prjIn').onchange=e=>{const f=e.target.files[0];if(f)importProject(f)};
+$('homePrj').onclick=pickProject;
+$('pimp').onclick=pickProject;
+$('pexp').onclick=exportCurrent;
 
 const PEN_NAMES={pen:'ペン',pencil:'鉛筆',fine:'細ペン',marker:'マーカー',highlighter:'蛍光ペン',dashed:'点線',neon:'ネオン',spray:'スプレー',dots:'点描'};
 const SHAPE_NAMES={line:'直線',arrow:'矢印',dblarrow:'双方向矢印',rect:'四角形',roundrect:'角丸四角形',ellipse:'楕円',triangle:'三角形',diamond:'ひし形',pentagon:'五角形',hexagon:'六角形',star:'星',heart:'ハート',bubble:'吹き出し',cross:'十字'};
@@ -1560,7 +1622,7 @@ $('mundo').onclick=()=>$('undo').click();
 $('mredo').onclick=()=>$('redo').click();
 $('mmore').onclick=()=>toggleSheet('more');
 $('mclose').onclick=closeSheet;
-const ACTS={img:'imgBtn',save:'save',share:'share',del:'del'};
+const ACTS={img:'imgBtn',save:'save',share:'share',del:'del',export:'pexp',import:'pimp'};
 document.querySelectorAll('#msheet [data-act]').forEach(b=>b.onclick=()=>{$(ACTS[b.dataset.act]).click();closeSheet()});
 $('mzout').onclick=()=>$('zout').click();
 $('mzin').onclick=()=>$('zin').click();
