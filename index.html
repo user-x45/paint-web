@@ -124,7 +124,8 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 #editor{flex:1;min-height:0;display:flex;flex-direction:column}
 #home{flex:1;min-height:0;overflow:auto;padding:20px 20px 32px}
 .hhead{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
-.hhead h1{font-size:22px;font-weight:600;margin:0;flex:1}
+.hhead h1{font-size:22px;font-weight:600;margin:0;flex:1;display:flex;align-items:center;gap:10px}
+.hhead .logo{width:28px;height:28px;border-radius:6px;flex:none}
 .pbtn{border:0;background:var(--accent);color:#fff;font:inherit;font-weight:600;padding:9px 18px;border-radius:6px;cursor:pointer}
 @media (prefers-color-scheme:dark){.pbtn{color:#00243d}}
 .pbtn:hover{filter:brightness(1.08)}
@@ -291,7 +292,7 @@ body.guest #msheet [data-act="share"],body.guest #msheet [data-act="import"]{dis
 
 <div id="home">
   <div class="hhead">
-    <div class="htitle"><h1>ペイント</h1><button class="ib" id="homeAbout" title="このアプリについて" aria-label="このアプリについて" data-ic="info"></button></div>
+    <div class="htitle"><h1><img class="logo" src="favicon/96.png" alt="" width="28" height="28">ペイント</h1><button class="ib" id="homeAbout" title="このアプリについて" aria-label="このアプリについて" data-ic="info"></button></div>
     <button class="pbtn" id="homeNew"><i class="ti ti-plus" aria-hidden="true"></i>新規作成</button>
     <button class="pbtn sec" id="homeImg"><i class="ti ti-photo-plus" aria-hidden="true"></i>画像から新規作成</button>
     <button class="pbtn sec" id="homePrj"><i class="ti ti-file-import" aria-hidden="true"></i>ファイルを開く</button>
@@ -1338,7 +1339,7 @@ function newDrawing(){
   busy=true;canvas.clear();applyBackground();fit();busy=false;
   renderLayers();resetHist();setTool('pen');
 }
-async function openDrawing(id){
+async function openDrawing(id,quiet){
   let m,d;
   try{
     [m,d]=await Promise.all([idb('meta','readonly',t=>t.objectStore('meta').get(id)),getData(id)]);
@@ -1349,7 +1350,7 @@ async function openDrawing(id){
   stopped=!m.cloud&&m.stopped?m.stopped:null;
   applyRole();
   $('title').value=m.title||'';setSaved('自動保存: 保存済み');
-  showEditor();
+  if(!quiet)showEditor();
   layers=normalizeLayers(d.layers||[],d.c&&d.c.background);
   activeLayer=firstDrawLayer().id;
   busy=true;
@@ -1358,6 +1359,7 @@ async function openDrawing(id){
     busy=false;renderLayers();resetHist();setTool('pen');
     loadUsedFonts(canvas.getObjects()).then(r=>{if(r)canvas.requestRenderAll()});
   });
+  return true;
 }
 async function goHome(){
   canvas.discardActiveObject();
@@ -1438,9 +1440,14 @@ function downloadDrawing(m){
   }).catch(()=>toast('画像の作成に失敗しました'));
 }
 async function shareDrawing(m){
-  await openDrawing(m.id);
+  if(!await openDrawing(m.id,true))return;
   await idle();
-  if(curId===m.id)openShare();
+  openShare(true);
+}
+async function leaveQuiet(){
+  await saveNow();
+  curId=null;cloud=null;stopped=null;applyRole();
+  renderHome();
 }
 async function copyDrawing(m){
   try{
@@ -2291,8 +2298,8 @@ async function createCloud(mode){
   await persistLocalNow();
 }
 
-function openShare(){
-  if(!curId||(cloud&&!cloud.owner))return;
+function openShare(fromHome){
+  if(!curId||(cloud&&!cloud.owner)){if(fromHome)leaveQuiet();return}
   canvas.discardActiveObject();canvas.renderAll();
   const prev=document.activeElement;
   const ov=document.createElement('div');ov.id='modal';
@@ -2300,7 +2307,7 @@ function openShare(){
   box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');
   ov.appendChild(box);
   let working=false;
-  const close=()=>{ov.remove();try{prev&&prev.focus&&prev.focus()}catch(e){}};
+  const close=()=>{ov.remove();try{prev&&prev.focus&&prev.focus()}catch(e){}if(fromHome)leaveQuiet()};
   const addLink=(label,url)=>{
     const w=document.createElement('div');w.className='lk';
     const l=document.createElement('label');l.textContent=label;
@@ -2373,12 +2380,6 @@ function openShare(){
     if(cloud&&cloud.mode==='view')addLink('閲覧用リンク（見るだけ）',shareUrl(cloud.id,cloud.editKey));
     const acts=document.createElement('div');acts.className='acts';
     acts.appendChild(btn('画像として共有',()=>{close();shareCurrent()}));
-    if(cloud&&cloud.mode!=='private'){
-      acts.appendChild(btn('Classroomで共有',()=>{
-        const u='https://classroom.google.com/share?url='+encodeURIComponent(shareUrl(cloud.id,cloud.editKey))+'&title='+encodeURIComponent($('title').value.trim()||'無題');
-        window.open(u,'_blank','noopener');
-      }));
-    }
     if(cloud){
       acts.appendChild(btn('リンクを再発行',rotate));
     }
