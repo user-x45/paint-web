@@ -1853,12 +1853,22 @@ function applyRole(){
     if(was&&curId){setTool('pen');setSaved(cloud?'共有リンクで編集中':'自動保存: 保存済み')}
   }
   syncSocket();
+  syncUrl();
 }
 ['keydown','paste','cut','drop','contextmenu'].forEach(t=>addEventListener(t,e=>{
   if(!ro||(t==='keydown'&&(e.key==='Escape'||e.ctrlKey||e.metaKey)))return;
   e.stopImmediatePropagation();
   if(t!=='keydown')e.preventDefault();
 },true));
+
+function syncUrl(){
+  if(cloud&&!cloud.owner)return;
+  let h='';
+  if(cloud&&curId&&(cloud.mode==='view'||cloud.mode==='edit'))h='#s='+cloud.id+'.'+(cloud.mode==='edit'?cloud.editKey:cloud.viewKey);
+  if(h===location.hash||(!h&&!location.hash))return;
+  if(!h&&!parseShare())return;
+  try{history.replaceState(null,'',location.pathname+location.search+h)}catch(e){}
+}
 
 function applyData(d,done){
   layers=normalizeLayers(d.layers||[],d.c&&d.c.background);
@@ -1917,7 +1927,6 @@ function handleRevoked(){
     cloud=null;
     applyRole();
     persistLocalNow().catch(()=>{});
-    uiAlert('サーバー上の共有が見つかりません。この絵は共有されていない状態に戻しました。');
   }
 }
 async function poll(force){
@@ -2067,7 +2076,6 @@ function openShare(){
     working=false;render();
   };
   const stop=async()=>{
-    if(!await uiConfirm('「自分のみ」にすると共有を停止し、サーバー上のデータを削除します。この端末の絵は残ります。',{ok:'自分のみにする',danger:true}))return;
     working=true;render();
     try{
       try{await api('DELETE','/api/d/'+cloud.id,{key:cloud.key})}
