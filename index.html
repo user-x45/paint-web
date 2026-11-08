@@ -447,7 +447,7 @@ let penType='pen';
 const hexA=(c,a)=>{const h=c.replace('#','');const n=parseInt(h.length===3?h.replace(/./g,'$&$&'):h,16);return 'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')'};
 let tool='pen',fg='#000000',bg='#ffffff',target='fg',lw=4,drawing=null,start=null,hist=[],redoS=[],busy=false,layers=[],activeLayer=null;
 let curId=null,curCreated=0,dirty=false,saveTimer=null,chain=Promise.resolve();
-let cloud=null,ro=false,pulling=false;
+let cloud=null,ro=false,pulling=false,stopped=null;
 const hints={select:'オブジェクトをクリックして移動・変形します。選択中に色を選ぶと、図形・文字・線の色が変わります。',eraser:'ドラッグで選択中のレイヤーの絵を消します。図形はクリックで削除。',pen:'ドラッグで自由に描きます。ペンの種類を切り替えられます。',text:'キャンバスをクリックして文字を入力します。もう一度「文字」を押すとフォントなどを変更できます。',line:'ドラッグで直線を描きます。',arrow:'ドラッグで矢印を描きます。',rect:'ドラッグで四角形を描きます。',ellipse:'ドラッグで楕円を描きます。'};
 const CW=1152,CH=648;
 const ZMIN=0.1,ZMAX=8;
@@ -638,7 +638,7 @@ function saveNow(){clearTimeout(saveTimer);chain=chain.then(doSave);return chain
 const currentPayload=()=>({w:canvas.width,h:canvas.height,c:canvas.toJSON(),layers:layers.map(l=>({...l})),active:activeLayer});
 const thumbNow=()=>canvas.toDataURL({format:'png',multiplier:Math.min(1,360/canvas.width)});
 const cloudMeta=()=>cloud&&cloud.owner?{id:cloud.id,ownerKey:cloud.ownerKey,viewKey:cloud.viewKey,editKey:cloud.editKey,mode:cloud.mode,rev:cloud.rev}:undefined;
-const persistLocal=(id,created,title,payload,thumb,now)=>putDrawing({id,title,created,updated:now,thumb,cloud:cloudMeta()},{id,...payload});
+const persistLocal=(id,created,title,payload,thumb,now)=>putDrawing({id,title,created,updated:now,thumb,cloud:cloudMeta(),stopped:cloud?undefined:(stopped||undefined)},{id,...payload});
 async function persistLocalNow(){
   await persistLocal(curId,curCreated,$('title').value.trim(),currentPayload(),thumbNow(),Date.now());
 }
@@ -1323,7 +1323,7 @@ function resetTools(){
 function showEditor(){resetTools();closeSheet();setPanel(false);$('home').hidden=true;$('editor').hidden=false;zoom=1;$('desk').scrollLeft=0;$('desk').scrollTop=0;fitRibbon();document.title='ペイント - '+($('title').value||'無題')}
 function resetHist(){hist=[snapshot()];redoS=[]}
 function newDrawing(){
-  cloud=null;applyRole();
+  cloud=null;stopped=null;applyRole();
   curId=uid();curCreated=Date.now();dirty=false;
   $('title').value='';setSaved('自動保存: 描くと保存されます');
   showEditor();
@@ -1339,6 +1339,7 @@ async function openDrawing(id){
   if(!m||!d){uiAlert('この絵のデータが見つかりません。');renderHome();return}
   curId=id;curCreated=m.created||Date.now();dirty=false;
   cloud=m.cloud?{id:m.cloud.id,key:m.cloud.ownerKey,ownerKey:m.cloud.ownerKey,viewKey:m.cloud.viewKey,editKey:m.cloud.editKey,mode:m.cloud.mode,rev:m.cloud.rev,role:'owner',owner:true}:null;
+  stopped=!m.cloud&&m.stopped?m.stopped:null;
   applyRole();
   $('title').value=m.title||'';setSaved('自動保存: 保存済み');
   showEditor();
@@ -1354,7 +1355,7 @@ async function openDrawing(id){
 async function goHome(){
   canvas.discardActiveObject();
   await saveNow();
-  curId=null;cloud=null;applyRole();
+  curId=null;cloud=null;stopped=null;applyRole();
   if(parseShare())history.replaceState(null,'',location.pathname+location.search);
   $('editor').hidden=true;$('home').hidden=false;document.title='ペイント';
   renderHome();
@@ -1442,7 +1443,7 @@ async function copyDrawing(m){
     const d=await getData(m.id);
     if(!d){uiAlert('この絵のデータが見つかりません。');return}
     const id=uid(),now=Date.now();
-    await putDrawing({...m,id,cloud:undefined,title:((m.title||'無題')+' のコピー').slice(0,40),created:now,updated:now},{...d,id});
+    await putDrawing({...m,id,cloud:undefined,stopped:undefined,title:((m.title||'無題')+' のコピー').slice(0,40),created:now,updated:now},{...d,id});
     renderHome();toast('コピーを作成しました');
   }catch(e){
     uiAlert('コピーできませんでした。保存容量が不足している可能性があります。');
@@ -1805,7 +1806,7 @@ const hasApi=!!API&&!/YOUR_/.test(API);
 async function api(method,path,o={}){
   if(!hasApi)throw new Error('no_api');
   const url=API+path+(o.query?'?'+new URLSearchParams(o.query):'');
-  const headers={};
+  const headers={...(o.headers||{})};
   if(o.key)headers.authorization='Bearer '+o.key;
   if(o.body!=null)headers['content-type']='application/json';
   const r=await fetch(url,{method,headers,body:o.body});
@@ -1826,7 +1827,7 @@ function errMsg(e){
   return 'サーバーに接続できませんでした。';
 }
 const MODES={
-  private:{l:'自分のみ',d:'自分だけが使えます。リンクは無効になりますが、再び共有すると同じリンクに戻ります。',i:'lock'},
+  private:{l:'自分のみ',d:'自分だけが使えます。サーバー上のデータは削除され、リンクは無効になります。再び共有すると同じリンクで再開できます。',i:'lock'},
   view:{l:'閲覧者',d:'リンクを知っている人は閲覧のみできます。',i:'eye'},
   edit:{l:'編集者',d:'リンクを知っている人は編集もできます。',i:'pencil'}
 };
@@ -2001,6 +2002,7 @@ async function openShared(id,key){
     if(mine){await openDrawing(mine.id);return}
   }catch(e){}
   cloud={id,key,role:r.role,rev:r.rev,mode:r.mode,owner:false};
+  stopped=null;
   curId='g'+id;curCreated=Date.now();dirty=false;
   $('title').value=r.title||'';
   applyRole();
@@ -2021,7 +2023,11 @@ addEventListener('hashchange',enterFromHash);
 async function createCloud(mode){
   canvas.discardActiveObject();
   const payload=currentPayload(),title=$('title').value.trim();
-  const r=await api('POST','/api/d',{query:{title,mode},body:JSON.stringify(payload)});
+  const keep=stopped;
+  const r=keep
+    ?await api('POST','/api/d/'+keep.id,{query:{title,mode},headers:{'x-owner-key':keep.ownerKey,'x-view-key':keep.viewKey,'x-edit-key':keep.editKey},body:JSON.stringify(payload)})
+    :await api('POST','/api/d',{query:{title,mode},body:JSON.stringify(payload)});
+  stopped=null;
   cloud={id:r.id,key:r.ownerKey,ownerKey:r.ownerKey,viewKey:r.viewKey,editKey:r.editKey,mode:r.mode,rev:r.rev,role:'owner',owner:true};
   await persistLocalNow();
 }
@@ -2053,7 +2059,17 @@ function openShare(){
     if(working||(cloud?cloud.mode===k:k==='private'))return;
         working=true;render();
     try{
-      if(!cloud)await createCloud(k);
+      if(k==='private'){
+        const c=cloud;
+        stopped={id:c.id,ownerKey:c.ownerKey,viewKey:c.viewKey,editKey:c.editKey};
+        cloud=null;applyRole();
+        try{await api('DELETE','/api/d/'+c.id,{key:c.ownerKey})}
+        catch(e){
+          if(e.status!==404&&e.status!==403){cloud=c;stopped=null;applyRole();throw e}
+        }
+        await persistLocalNow();
+      }
+      else if(!cloud)await createCloud(k);
       else{
         const r=await api('PATCH','/api/d/'+cloud.id,{key:cloud.key,body:JSON.stringify({mode:k})});
         cloud.mode=r.mode;
@@ -2082,7 +2098,7 @@ function openShare(){
     box.innerHTML='';
     const h=document.createElement('h3');h.textContent='共有';
     const note=document.createElement('p');note.className='note';
-    note.textContent=working?'処理中…':cloud&&cloud.mode!=='private'?'公開範囲を変更できます。変更はすぐ反映されます。リンクは変わりません。':cloud?'共有を停止中です。閲覧者か編集者を選ぶと、以前と同じリンクで再開できます。':'共有していません。閲覧者か編集者を選ぶと、この絵がサーバーに保存されます。';
+    note.textContent=working?'処理中…':cloud&&cloud.mode!=='private'?'公開範囲を変更できます。変更はすぐ反映されます。リンクは変わりません。':stopped?'共有を停止中です（サーバーからは削除済み）。閲覧者か編集者を選ぶと、以前と同じリンクで再開できます。':'共有していません。閲覧者か編集者を選ぶと、この絵がサーバーに保存されます。';
     box.append(h,note);
     ['private','view','edit'].forEach(k=>{
       const b=document.createElement('button');
