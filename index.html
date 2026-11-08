@@ -1824,7 +1824,7 @@ function errMsg(e){
   return 'サーバーに接続できませんでした。';
 }
 const MODES={
-  private:{l:'自分のみ',d:'あなただけが開けます。サーバーにバックアップされます。',i:'lock'},
+  private:{l:'自分のみ',d:'この端末だけに保存されます。サーバーには保存されません。',i:'lock'},
   view:{l:'閲覧者',d:'リンクを知っている人は見るだけできます。',i:'eye'},
   edit:{l:'編集者',d:'リンクを知っている人は編集もできます。',i:'pencil'}
 };
@@ -1982,7 +1982,8 @@ function openShare(){
     row.append(inp,b);w.append(l,row);box.appendChild(w);
   };
   const choose=async k=>{
-    if(working||(cloud&&cloud.mode===k))return;
+    if(working||(cloud?cloud.mode===k:k==='private'))return;
+    if(k==='private'){await stop();return}
     working=true;render();
     try{
       if(!cloud)await createCloud(k);
@@ -2007,7 +2008,7 @@ function openShare(){
     working=false;render();
   };
   const stop=async()=>{
-    if(!await uiConfirm('共有を停止し、サーバー上のデータを削除します。この端末の絵は残ります。',{ok:'停止して削除',danger:true}))return;
+    if(!await uiConfirm('「自分のみ」にすると共有を停止し、サーバー上のデータを削除します。この端末の絵は残ります。',{ok:'自分のみにする',danger:true}))return;
     working=true;render();
     try{
       try{await api('DELETE','/api/d/'+cloud.id,{key:cloud.key})}
@@ -2015,7 +2016,7 @@ function openShare(){
       cloud=null;
       await persistLocalNow();
       applyRole();
-      toast('共有を停止しました');
+      toast('自分のみに戻しました');
     }catch(e){toast(errMsg(e))}
     working=false;render();
   };
@@ -2027,11 +2028,11 @@ function openShare(){
     box.innerHTML='';
     const h=document.createElement('h3');h.textContent='共有';
     const note=document.createElement('p');note.className='note';
-    note.textContent=working?'処理中…':cloud?'公開範囲を変更できます。変更はすぐ反映されます。':'まだ共有されていません。公開範囲を選ぶと、この絵がサーバーに保存されます。';
+    note.textContent=working?'処理中…':cloud?'公開範囲を変更できます。変更はすぐ反映されます。':'共有していません。閲覧者か編集者を選ぶと、この絵がサーバーに保存されます。';
     box.append(h,note);
     ['private','view','edit'].forEach(k=>{
       const b=document.createElement('button');
-      b.className='opt'+(cloud&&cloud.mode===k?' on':'');
+      b.className='opt'+((cloud?cloud.mode:'private')===k?' on':'');
       b.disabled=working;
       b.innerHTML='<i class="ti ti-'+MODES[k].i+'" aria-hidden="true"></i><div><b></b><span></span></div>';
       b.querySelector('b').textContent=MODES[k].l;
@@ -2039,13 +2040,12 @@ function openShare(){
       b.onclick=()=>choose(k);
       box.appendChild(b);
     });
-    if(cloud&&cloud.mode==='edit')addLink('編集用リンク（編集できます）',shareUrl(cloud.id,cloud.editKey));
-    if(cloud&&cloud.mode!=='private')addLink('閲覧用リンク（見るだけ）',shareUrl(cloud.id,cloud.viewKey));
+    if(cloud&&cloud.mode==='edit')addLink('編集用リンク',shareUrl(cloud.id,cloud.editKey));
+    if(cloud&&cloud.mode==='view')addLink('閲覧用リンク（見るだけ）',shareUrl(cloud.id,cloud.viewKey));
     const acts=document.createElement('div');acts.className='acts';
     acts.appendChild(btn('画像として共有',()=>{close();shareCurrent()}));
     if(cloud){
       acts.appendChild(btn('リンクを再発行',rotate));
-      acts.appendChild(btn('共有を停止して削除',stop,'danger'));
     }
     const sp=document.createElement('span');sp.className='sp';acts.appendChild(sp);
     acts.appendChild(btn('閉じる',close));
