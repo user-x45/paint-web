@@ -375,7 +375,11 @@ html{-webkit-tap-highlight-color:transparent}
 @media (pointer:coarse),(max-width:720px){#cropbar button{min-height:44px}}
 #pbar{display:flex;align-items:center;gap:4px;margin:6px 8px 0;flex:none}
 #ptabs{position:relative;display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:thin;padding:2px 0}
-.pt{display:inline-flex;align-items:center;gap:4px;flex:none;height:28px;max-width:180px;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit;cursor:pointer;white-space:nowrap}
+.pt{display:inline-flex;align-items:center;gap:4px;flex:none;height:28px;max-width:200px;padding:0 6px 0 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap;-webkit-touch-callout:none}
+.pt.nx{padding-right:12px}
+.pt .x{display:grid;place-items:center;flex:none;width:18px;height:18px;margin-left:2px;padding:0;border:0;border-radius:4px;background:none;color:var(--muted);cursor:pointer}
+.pt .x i{font-size:14px;color:inherit}
+.pt .x:hover{background:var(--hover);color:var(--ink)}
 .pt span{overflow:hidden;text-overflow:ellipsis}
 .pt i{font-size:14px;color:var(--accent)}
 .pt:hover{background:var(--hover)}
@@ -387,7 +391,7 @@ body.ro .pedit{display:none!important}
 body.pglock .ribbon,body.pglock #mdock,body.pglock #lpanel,body.pglock #lbtn,body.pglock .mtop:not(#mmore),body.pglock #mimg,body.pglock #mresize,body.pglock #mdel,body.pglock #tbToggle{display:none!important}
 body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],body.pglock #msheet [data-act="del"]{display:none}
 @media (max-height:440px){#pbar{margin:2px 6px 0}.pt{height:26px}}
-@media (pointer:coarse),(max-width:720px){.pt{height:34px}}
+@media (pointer:coarse),(max-width:720px){.pt{height:34px}.pt .x{width:26px;height:26px}}
 </style>
 </head>
 <body>
@@ -433,7 +437,7 @@ body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],bod
     <div id="sw"></div><button class="ib" id="palBtn" title="パレット" aria-label="パレット" aria-expanded="false" data-ic="down"></button><button class="cpick" id="custom" title="色の編集" aria-label="色の編集" aria-haspopup="dialog" aria-expanded="false"><span class="cs" style="background:#0067c0"></span></button></div><small>色</small></div>
   <div class="g"><div class="row"><button class="ib" id="lbtn" title="レイヤー" aria-label="レイヤー" aria-expanded="false" data-ic="layers"></button></div><small>レイヤー</small></div>
 </div>
-<div id="pbar"><div id="ptabs" role="tablist" aria-label="ページ"></div><span class="plk" id="plk" hidden><i class="ti ti-lock" aria-hidden="true"></i>ロック中</span><button class="ib sm pedit" id="padd" title="ページを追加" aria-label="ページを追加" data-ic="plus"></button><button class="ib sm pedit" id="pmore" title="ページの操作" aria-label="ページの操作" aria-haspopup="menu" data-ic="more"></button></div>
+<div id="pbar"><div id="ptabs" role="tablist" aria-label="ページ"></div><span class="plk" id="plk" hidden><i class="ti ti-lock" aria-hidden="true"></i>ロック中</span><button class="ib sm pedit" id="padd" title="ページを追加" aria-label="ページを追加" data-ic="plus"></button></div>
 <div id="work">
 <nav id="mdock" aria-label="ツール">
 <button class="mt" data-mt="select"><i class="ti ti-pointer" aria-hidden="true"></i><span>選択</span></button>
@@ -562,6 +566,7 @@ let tool='pen',fg='#000000',bg='#ffffff',target='fg',lw=4,slw=4,widthPending=fal
 let cropFrame=null,cropImg=null;
 let curId=null,curCreated=0,dirty=false,saveTimer=null,chain=Promise.resolve();
 let cloud=null,ro=false,roRole=false,pulling=false,stopped=null;
+const MAX_PAGES=20;
 let pages=[],pdata=new Map(),curPage=null,switching=false;
 let sentMap=new Map(),sentOrder='',sentLayers='',sentTitle='',mine=new Set(),opQ=false,needPull=false,fullFlag=false,opChain=Promise.resolve(),liveSid=null,livePts=[],liveSent=0,liveStyle=null,liveT=null,liveEnds=[],liveDrawQ=false,localT=null;
 const liveIn=new Map();
@@ -1217,10 +1222,50 @@ async function copySelection(){
   if(!objs.length)return;
   canvas.discardActiveObject();
   clipboard=await Promise.all(objs.map(o=>o.clone()));
+  pasteK=0;
+  try{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText('paint-clipboard').catch(()=>{})}catch(e){}
   reselect(objs);
   canvas.requestRenderAll();
   toast('コピーしました');
 }
+async function cutSelection(){
+  if(ro||cropFrame||!canvas.getActiveObjects().length)return;
+  await copySelection();
+  $('del').click();
+}
+let lastPt=null,pasteK=0;
+canvas.on('mouse:move',o=>{if(o&&o.e)lastPt=canvas.getScenePoint(o.e)});
+function pastePoint(){
+  const inside=lastPt&&lastPt.x>=0&&lastPt.y>=0&&lastPt.x<=CW&&lastPt.y<=CH;
+  const base=inside?lastPt:{x:CW/2,y:CH/2};
+  const k=pasteK++*16;
+  return{x:base.x+k,y:base.y+k};
+}
+addEventListener('paste',async e=>{
+  if($('editor').hidden||$('modal')||ro||cropFrame)return;
+  const ae=document.activeElement;
+  if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT'))return;
+  const ao=canvas.getActiveObject();
+  if(ao&&ao.isEditing)return;
+  const items=[...((e.clipboardData&&e.clipboardData.items)||[])];
+  const it=items.find(x=>x.kind==='file'&&/^image\//.test(x.type));
+  if(it){
+    const f=it.getAsFile();
+    if(!f)return;
+    e.preventDefault();
+    let img;
+    try{img=await prepImage(f)}catch(err){toast('画像を読み込めませんでした');return}
+    const L=layerOf(activeLayer);
+    if(L&&L.bg)setActive(drawLayerId());
+    if(blocked())return;
+    await placeImage(img,false);
+    return;
+  }
+  if(clipboard.length){
+    e.preventDefault();
+    await pasteAt(pastePoint());
+  }
+});
 async function pasteAt(pt){
   if(!clipboard.length)return;
   const L=layerOf(activeLayer);
@@ -1312,6 +1357,8 @@ addEventListener('keydown',e=>{
   if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();$('del').click()}
   else if(mod&&k==='z'){e.preventDefault();(e.shiftKey?$('redo'):$('undo')).click()}
   else if(mod&&k==='y'){e.preventDefault();$('redo').click()}
+  else if(mod&&k==='c'&&!e.shiftKey&&!e.altKey&&canvas.getActiveObjects().length){e.preventDefault();copySelection()}
+  else if(mod&&k==='x'&&!e.shiftKey&&!e.altKey&&canvas.getActiveObjects().length){e.preventDefault();cutSelection()}
   else if(!mod&&!e.altKey){
     if(KEYS[k]){closeSheet();setTool(KEYS[k])}
     else if(k==='[')shapes.includes(tool)?setShapeLw(Math.max(1,slw-1)):setLw(Math.max(1,lw-1));
@@ -1818,7 +1865,7 @@ function openMenu(btn,m){
 }
 let menuAt=0;
 document.addEventListener('click',e=>{if(!e.target.closest('#menu')&&Date.now()-menuAt>400)closeMenu()});
-document.addEventListener('pointerdown',e=>{if(!$('menu')||e.target.closest('#menu')||e.target.closest('.card .x,#pmore'))return;if(Date.now()-menuAt>400)closeMenu()},true);
+document.addEventListener('pointerdown',e=>{if(!$('menu')||e.target.closest('#menu')||e.target.closest('.card .x'))return;if(Date.now()-menuAt>400)closeMenu()},true);
 addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
 addEventListener('resize',closeMenu);
 $('home').addEventListener('scroll',closeMenu);
@@ -2074,6 +2121,7 @@ async function importProject(f){
   const valid=!!o&&o.app==='paint'&&(Array.isArray(o.pages)?o.pages.length>0&&o.pages.every(p=>p&&p.c&&Array.isArray(p.layers)):!!o.c&&Array.isArray(o.layers));
   if(!valid){toast('読み込めないファイルです');return}
   const list=pagesOf(o);
+  if(list.length>MAX_PAGES){toast('ページ数が多すぎます（最大 '+MAX_PAGES+' ページ）');return}
   const id=uid(),now=Date.now();
   const title=String(o.title||f.name.replace(/\.[^.]+$/,'')).slice(0,40);
   try{
@@ -2465,7 +2513,7 @@ async function api(method,path,o={}){
 }
 function errMsg(e){
   if(e.message==='no_api')return '共有サーバーが未設定です（config.js の PAINT_API を設定してください）';
-  if(e.status===413)return 'データが大きすぎます（8MBまで）';
+  if(e.status===413)return 'データが大きすぎます（12MBまで）';
   if(e.status===404)return 'この共有は見つかりません。削除された可能性があります。';
   if(e.status===403)return e.message==='private'?'この絵は「自分のみ」に設定されています。':'アクセス権がありません。リンクが正しいか確認してください。';
   return 'サーバーに接続できませんでした。';
@@ -2498,18 +2546,56 @@ function setPages(list,want){
   pdata.delete(curPage);
   return d;
 }
+let lpFlag=false;
+function bindLongPress(el,id){
+  let timer=null,x0=0,y0=0;
+  const clear=()=>{clearTimeout(timer);timer=null};
+  el.addEventListener('pointerdown',e=>{
+    lpFlag=false;
+    if(e.pointerType!=='touch'||roRole||e.target.closest('.x'))return;
+    x0=e.clientX;y0=e.clientY;
+    clear();
+    timer=setTimeout(()=>{
+      timer=null;lpFlag=true;
+      const r=el.getBoundingClientRect();
+      openPageMenu(id,r.left,r.bottom+4);
+    },500);
+  });
+  el.addEventListener('pointermove',e=>{if(timer&&Math.hypot(e.clientX-x0,e.clientY-y0)>8)clear()});
+  ['pointerup','pointercancel','pointerleave'].forEach(n=>el.addEventListener(n,clear));
+}
 function renderPages(){
   const t=$('ptabs');
   if(!t)return;
   t.innerHTML='';
   pages.forEach(p=>{
-    const b=document.createElement('button');
+    const b=document.createElement('div');
     b.className='pt'+(p.id===curPage?' on':'')+(p.locked?' lk':'');
+    b.tabIndex=0;
     b.setAttribute('role','tab');
     b.setAttribute('aria-selected',String(p.id===curPage));
-    if(p.locked)b.innerHTML=ic('lock');
+    if(p.locked)b.insertAdjacentHTML('beforeend',ic('lock'));
     const s=document.createElement('span');s.textContent=p.name;b.appendChild(s);
-    b.onclick=()=>switchPage(p.id);
+    if(!roRole&&!p.locked&&pages.length>1){
+      const x=document.createElement('button');
+      x.className='x';x.innerHTML=ic('close');
+      x.title='ページを削除';
+      x.setAttribute('aria-label','ページ「'+p.name+'」を削除');
+      x.onclick=e=>{e.stopPropagation();deletePage(p.id)};
+      x.onkeydown=e=>e.stopPropagation();
+      b.appendChild(x);
+    }else b.classList.add('nx');
+    b.onclick=e=>{
+      if(lpFlag){lpFlag=false;e.stopPropagation();menuAt=Date.now();return}
+      switchPage(p.id);
+    };
+    b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();switchPage(p.id)}};
+    b.oncontextmenu=e=>{
+      e.preventDefault();
+      if(roRole)return;
+      openPageMenu(p.id,e.clientX,e.clientY);
+    };
+    bindLongPress(b,p.id);
     t.appendChild(b);
   });
   const on=t.querySelector('.pt.on');
@@ -2518,6 +2604,8 @@ function renderPages(){
     else if(on.offsetLeft+on.offsetWidth>t.scrollLeft+t.clientWidth)t.scrollLeft=on.offsetLeft+on.offsetWidth-t.clientWidth;
   }
   $('plk').hidden=!pgLocked();
+  $('padd').disabled=pages.length>=MAX_PAGES;
+  $('padd').title=pages.length>=MAX_PAGES?'ページは最大 '+MAX_PAGES+' ページまでです':'ページを追加';
 }
 function syncRo(){
   if(ro!==(roRole||pgLocked()))applyRole();
@@ -2569,6 +2657,7 @@ function switchPage(id){
 }
 function addPage(){
   if(roRole||switching)return;
+  if(pages.length>=MAX_PAGES){toast('ページは最大 '+MAX_PAGES+' ページまでです');return}
   canvas.discardActiveObject();
   const B=layers[0],color=B&&B.bg?B.color:'#ffffff';
   const ls=defaultLayers(color);
@@ -2581,90 +2670,98 @@ function addPage(){
   structChanged();
   enterPage(p.id,true);
 }
-function dupPage(){
+function dupPage(id){
   if(roRole||switching)return;
+  if(pages.length>=MAX_PAGES){toast('ページは最大 '+MAX_PAGES+' ページまでです');return}
+  const src=pageOf(id);
+  if(!src)return;
   canvas.discardActiveObject();
-  const src=pageOf(curPage);
-  const cp=JSON.parse(JSON.stringify(pageSnap()));
+  const cp=JSON.parse(JSON.stringify(id===curPage?pageSnap():pdata.get(id)));
   const p={id:uid(),name:(src.name+' のコピー').slice(0,30),locked:false};
   pages.splice(pages.indexOf(src)+1,0,p);
   pdata.set(p.id,cp);
   structChanged();
   enterPage(p.id,true);
 }
-async function renamePage(){
-  const p=pageOf(curPage);
+async function renamePage(id){
+  const p=pageOf(id);
   if(!p||roRole||p.locked)return;
   const v=await uiPrompt('ページ名',p.name);
   if(v===null)return;
   const n=v.trim().slice(0,30);
-  if(!n||n===p.name)return;
+  if(!n||n===p.name||!pageOf(id))return;
   p.name=n;
   structChanged();
 }
-function movePage(d){
+function movePage(id,d){
   if(roRole)return;
-  const i=pages.findIndex(p=>p.id===curPage),j=i+d;
+  const i=pages.findIndex(p=>p.id===id),j=i+d;
   if(i<0||j<0||j>=pages.length)return;
   const t=pages[i];pages[i]=pages[j];pages[j]=t;
   structChanged();
 }
-function toggleLock(){
-  const p=pageOf(curPage);
+function toggleLock(id){
+  const p=pageOf(id);
   if(!p||roRole||!canOwn())return;
-  canvas.discardActiveObject();
+  if(id===curPage)canvas.discardActiveObject();
   p.locked=!p.locked;
   structChanged();
-  syncRo();
-  toast(p.locked?'このページをロックしました':'ロックを解除しました');
+  if(id===curPage)syncRo();
+  toast(p.locked?'ページをロックしました':'ロックを解除しました');
 }
-async function deletePage(){
-  const p=pageOf(curPage);
+async function deletePage(id){
+  const p=pageOf(id);
   if(!p||roRole||switching)return;
   if(pages.length<2){toast('最後のページは削除できません');return}
   if(p.locked){toast('ロックされたページは削除できません。先にロックを解除してください');return}
   if(!await uiConfirm('ページ「'+p.name+'」と、その中の絵をすべて削除しますか？',{ok:'削除',danger:true}))return;
   const i=pages.indexOf(p);
-  if(i<0)return;
+  if(i<0||p.locked||pages.length<2)return;
   pages.splice(i,1);
-  const next=pages[Math.min(i,pages.length-1)];
-  structChanged();
-  enterPage(next.id,false);
+  if(id===curPage){
+    const next=pages[Math.min(i,pages.length-1)];
+    structChanged();
+    enterPage(next.id,false);
+  }else{
+    pdata.delete(id);
+    structChanged();
+  }
 }
-function openPageMenu(btn){
-  const old=$('menu');
-  if(old&&old.dataset.for==='page'){closeMenu();return}
+function openPageMenu(id,x,y){
   closeMenu();
-  const p=pageOf(curPage);
+  const p=pageOf(id);
   if(!p)return;
   const i=pages.indexOf(p),own=canOwn();
   const items=[
-    ['名前を変更',renamePage,0,'pencil',p.locked],
-    ['複製',dupPage,0,'copy',false],
-    ['左へ移動',()=>movePage(-1),0,'arrow-left',i<1],
-    ['右へ移動',()=>movePage(1),0,'arrow-right',i>=pages.length-1],
-    [p.locked?(own?'ロックを解除':'ロック解除（作成者のみ）'):(own?'ロックする':'ロック（作成者のみ）'),toggleLock,0,p.locked?'lock-open':'lock',!own],
-    ['削除',deletePage,1,'trash',p.locked||pages.length<2]
+    ['名前を変更',()=>renamePage(id),0,'pencil',p.locked],
+    ['複製',()=>dupPage(id),0,'copy',pages.length>=MAX_PAGES],
+    ['左へ移動',()=>movePage(id,-1),0,'arrow-left',i<1],
+    ['右へ移動',()=>movePage(id,1),0,'arrow-right',i>=pages.length-1],
+    [p.locked?(own?'ロックを解除':'ロック解除（作成者のみ）'):(own?'ロックする':'ロック（作成者のみ）'),()=>toggleLock(id),0,p.locked?'lock-open':'lock',!own],
+    ['削除',()=>deletePage(id),1,'trash',p.locked||pages.length<2]
   ];
-  const menu=document.createElement('div');menu.id='menu';menu.dataset.for='page';menu.setAttribute('role','menu');
-  items.forEach(([l,fn,danger,icon,off])=>{
-    const b=document.createElement('button');b.setAttribute('role','menuitem');
-    const ii=document.createElement('i');ii.className='ti ti-'+icon;ii.setAttribute('aria-hidden','true');b.append(ii,l);
+  const menu=document.createElement('div');
+  menu.id='menu';
+  menu.setAttribute('role','menu');
+  items.forEach(([l,f,danger,icon,off])=>{
+    const b=document.createElement('button');
+    b.setAttribute('role','menuitem');
+    const ii=document.createElement('i');ii.className='ti ti-'+icon;ii.setAttribute('aria-hidden','true');
+    b.append(ii,l);
     if(danger)b.classList.add('danger');
     b.disabled=!!off;
-    b.onclick=e=>{e.stopPropagation();closeMenu();fn()};
+    b.onclick=e=>{e.stopPropagation();closeMenu();f()};
     menu.appendChild(b);
   });
   menuAt=Date.now();
   document.body.appendChild(menu);
-  const r=btn.getBoundingClientRect(),mw=menu.offsetWidth,mh=menu.offsetHeight;
-  menu.style.left=Math.max(8,Math.min(r.right-mw,innerWidth-mw-8))+'px';
-  menu.style.top=Math.max(8,r.bottom+mh+8>innerHeight?r.top-mh-4:r.bottom+4)+'px';
-  const f=menu.querySelector('button:not(:disabled)');
-  if(f)f.focus();
+  const mw=menu.offsetWidth,mh=menu.offsetHeight;
+  menu.style.left=Math.max(8,Math.min(x,innerWidth-mw-8))+'px';
+  menu.style.top=Math.max(8,Math.min(y,innerHeight-mh-8))+'px';
+  const f0=menu.querySelector('button:not(:disabled)');
+  if(f0)f0.focus();
 }
 $('padd').onclick=addPage;
-$('pmore').onclick=()=>openPageMenu($('pmore'));
 function persistSoon(){
   if(cloud&&cloud.owner){
     clearTimeout(localT);
@@ -2724,7 +2821,7 @@ function applyRole(){
   syncUrl();
 }
 ['keydown','paste','cut','drop','contextmenu'].forEach(t=>addEventListener(t,e=>{
-  if(!ro||(t==='keydown'&&(e.key==='Escape'||e.ctrlKey||e.metaKey||/^(INPUT|TEXTAREA)$/.test(e.target.tagName||''))))return;
+  if(!ro||(t==='keydown'&&(e.key==='Escape'||e.ctrlKey||e.metaKey||/^(INPUT|TEXTAREA)$/.test(e.target.tagName||''))||((t==='keydown'||t==='contextmenu')&&!!e.target.closest&&!!e.target.closest('#pbar'))))return;
   e.stopImmediatePropagation();
   if(t!=='keydown')e.preventDefault();
 },true));
