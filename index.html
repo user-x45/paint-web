@@ -131,7 +131,9 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .pbtn:hover{filter:brightness(1.08)}
 .pbtn.sec{background:var(--panel);color:var(--ink);border:1px solid var(--line);font-weight:400}
 .sub{color:var(--muted);margin:0 0 12px}
-#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+#grid,#sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.shead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:28px 0 12px}
+.shead .sub{margin:0}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;position:relative}
 .card:hover{border-color:var(--accent)}
 .card .th{aspect-ratio:4/3;background:#fff;display:grid;place-items:center;overflow:hidden}
@@ -279,7 +281,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .hhead .pbtn{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:76px;padding:10px 4px;font-size:clamp(10px,3.1vw,12px);line-height:1.3;text-align:center;white-space:nowrap;border-radius:12px}
 .hhead .pbtn i{margin:0;font-size:24px}
 .sub{font-size:12px;margin:0 0 10px}
-#grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#grid,#sgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .card{border-radius:12px}
 .card.new{display:none}
 .card .meta{padding:8px 10px 10px}
@@ -382,6 +384,10 @@ html{-webkit-tap-highlight-color:transparent}
 .pt span{overflow:hidden;text-overflow:ellipsis}
 .pt i{font-size:14px;color:var(--accent)}
 .pt:hover{background:var(--hover)}
+.pt.drag{opacity:.5}
+.pt.lift{background:var(--hover);transform:scale(1.06)}
+.pt.drop-l{box-shadow:-3px 0 0 var(--accent)}
+.pt.drop-r{box-shadow:3px 0 0 var(--accent)}
 .pt.on{background:var(--sel);border-color:var(--accent)}
 .plk{display:flex;align-items:center;gap:4px;flex:none;color:var(--accent);font-size:12px;white-space:nowrap}
 .plk i{font-size:14px}
@@ -407,6 +413,7 @@ body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],bod
   <div class="subrow"><p class="sub" id="subtxt">保存した絵（このブラウザに自動保存されています）</p><div class="selacts"><button class="pbtn sec sm" id="homeSel"><i class="ti ti-checkbox" aria-hidden="true"></i>選択</button><button class="pbtn sec sm" id="selAll" hidden>すべて選択</button><button class="pbtn sm danger" id="selDel" hidden></button><button class="pbtn sec sm" id="selCancel" hidden>キャンセル</button></div></div>
   <div id="grid"></div>
   <div class="empty" id="empty" hidden><span>まだ絵がありません。</span><span>「新規作成」から描き始めましょう。</span></div>
+  <div id="sharedSec" hidden><div class="shead"><p class="sub">共有された作品の履歴</p><button class="pbtn sec sm" id="sharedClear">すべて削除</button></div><div id="sgrid"></div></div>
 </div>
 
 <div id="cropbar" hidden role="toolbar" aria-label="切り抜き"><button id="cropReset">リセット</button><button id="cropCancel">キャンセル</button><button id="cropOk" class="ok">適用</button></div>
@@ -503,11 +510,13 @@ document.querySelectorAll('[data-ic]').forEach(b=>{b.innerHTML=ic(b.dataset.ic)}
 
 const dbp=new Promise((res,rej)=>{
   if(!window.indexedDB)return rej(new Error('IndexedDB unavailable'));
-  const r=indexedDB.open('paint-db',1);
-  r.onupgradeneeded=()=>{const db=r.result;db.createObjectStore('meta',{keyPath:'id'});db.createObjectStore('data',{keyPath:'id'})};
-  r.onsuccess=()=>res(r.result);
+  const r=indexedDB.open('paint-db',2);
+  r.onupgradeneeded=()=>{
+    const db=r.result;
+    ['meta','data','shared'].forEach(n=>{if(!db.objectStoreNames.contains(n))db.createObjectStore(n,{keyPath:'id'})});
+  };
+  r.onsuccess=()=>{r.result.onversionchange=()=>r.result.close();res(r.result)};
   r.onerror=()=>rej(r.error);
-  r.onblocked=()=>rej(new Error('blocked'));
 });
 function idb(stores,mode,fn){
   return dbp.then(db=>new Promise((res,rej)=>{
@@ -521,6 +530,10 @@ function idb(stores,mode,fn){
 const listMeta=()=>idb('meta','readonly',t=>t.objectStore('meta').getAll());
 const getData=id=>idb('data','readonly',t=>t.objectStore('data').get(id));
 const putMeta=m=>idb('meta','readwrite',t=>t.objectStore('meta').put(m));
+const listShared=()=>idb('shared','readonly',t=>t.objectStore('shared').getAll());
+const putShared=m=>idb('shared','readwrite',t=>t.objectStore('shared').put(m));
+const delShared=id=>idb('shared','readwrite',t=>t.objectStore('shared').delete(id));
+const clearShared=()=>idb('shared','readwrite',t=>t.objectStore('shared').clear());
 const putDrawing=(m,d)=>idb(['meta','data'],'readwrite',t=>{t.objectStore('meta').put(m);t.objectStore('data').put(d)});
 const delDrawing=id=>idb(['meta','data'],'readwrite',t=>{t.objectStore('meta').delete(id);t.objectStore('data').delete(id)});
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
@@ -895,6 +908,7 @@ async function doSave(){
       }
     }
     if(!cloud||cloud.owner)await persistLocal(id,created,title,payload,thumb,now);
+    else if(!remoteFail)await recordShared(thumb);
     if(remoteFail){
       dirty=true;clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,8000);
       setSaved(cloud.owner?'自動保存: 端末に保存済み（サーバー未同期・再試行中）':'自動保存: サーバーに保存できません。再試行中…');
@@ -1652,6 +1666,7 @@ async function openDrawing(id,quiet){
 async function goHome(){
   canvas.discardActiveObject();
   await saveNow();
+  if(cloud&&!cloud.owner)await recordShared();
   curId=null;cloud=null;stopped=null;clearPages();applyRole();
   if(parseShare())history.replaceState(null,'',location.pathname+location.search);
   $('editor').hidden=true;$('home').hidden=false;document.title='ペイント';
@@ -1960,7 +1975,65 @@ async function renderHome(){
   });
   $('empty').hidden=idx.length>0;
   updateSelUI();
+  renderShared();
 }
+let pruneAt=0,pruning=false;
+async function pruneShared(list){
+  if(!hasApi||pruning||!list.length||Date.now()-pruneAt<20000)return;
+  pruning=true;pruneAt=Date.now();
+  let changed=false;
+  await Promise.all(list.map(async m=>{
+    try{
+      const r=await api('GET','/api/d/'+m.id+'/rev',{key:m.key});
+      if(r&&r.role&&r.role!==m.role){await putShared({...m,role:r.role});changed=true}
+    }catch(e){
+      if(e.status===403||e.status===404){
+        try{await delShared(m.id);changed=true}catch(x){}
+      }
+    }
+  }));
+  pruning=false;
+  if(changed)renderShared(true);
+}
+async function renderShared(skipPrune){
+  const g=$('sgrid');
+  let list=[];
+  try{list=(await listShared()).sort((a,b)=>b.opened-a.opened)}catch(e){}
+  g.innerHTML='';
+  $('sharedSec').hidden=!list.length||selMode;
+  list.forEach(m=>{
+    const c=document.createElement('div');c.className='card';c.tabIndex=0;
+    const th=document.createElement('div');th.className='th';
+    const im=document.createElement('img');im.alt='';im.src=m.thumb||'';th.appendChild(im);
+    const meta=document.createElement('div');meta.className='meta';
+    const t=document.createElement('b');t.textContent=m.title||'無題';
+    const s=document.createElement('span');s.textContent=fmt(m.opened)+' ・ '+(m.role==='view'?'閲覧のみ':'編集可');
+    meta.append(t,s);
+    const x=document.createElement('button');x.className='x';x.innerHTML=ic('trash');x.title='履歴から削除';
+    x.setAttribute('aria-label','履歴から削除');
+    x.onclick=async e=>{
+      e.stopPropagation();
+      if(!await uiConfirm('「'+(m.title||'無題')+'」を履歴から削除しますか？\n共有元の作品は削除されません。',{ok:'削除',danger:true}))return;
+      try{await delShared(m.id)}catch(err){toast('削除に失敗しました')}
+      renderShared();
+    };
+    x.onkeydown=e=>e.stopPropagation();
+    c.append(th,meta,x);
+    c.onclick=()=>openSharedEntry(m);
+    c.onkeydown=e=>{if(e.key==='Enter')openSharedEntry(m)};
+    g.appendChild(c);
+  });
+  if(!skipPrune)pruneShared(list);
+}
+async function openSharedEntry(m){
+  const r=await openShared(m.id,m.key);
+  if(r&&r!==true&&(r.status===404||r.status===403))renderShared(true);
+}
+$('sharedClear').onclick=async()=>{
+  if(!await uiConfirm('共有された作品の履歴をすべて削除しますか？\n共有元の作品は削除されません。',{ok:'削除',danger:true}))return;
+  try{await clearShared()}catch(err){toast('削除に失敗しました')}
+  renderShared();
+};
 const IMG_MAX_EDGE=2048,IMG_MIN_EDGE=1280,IMG_MAX_BYTES=1500000;
 function imgLimit(mode){
   const base=mode==='new'?Math.max(...defaultSize()):Math.max(CW,CH);
@@ -2573,23 +2646,92 @@ function setPages(list,want){
   pdata.delete(curPage);
   return d;
 }
-let lpFlag=false;
-function bindLongPress(el,id){
-  let timer=null,x0=0,y0=0;
-  const clear=()=>{clearTimeout(timer);timer=null};
-  el.addEventListener('pointerdown',e=>{
-    lpFlag=false;
-    if(e.pointerType!=='touch'||roRole||e.target.closest('.x'))return;
-    x0=e.clientX;y0=e.clientY;
-    clear();
-    timer=setTimeout(()=>{
-      timer=null;lpFlag=true;
+let lpFlag=false,tabDragAt=0,tabTouchLock=false,tabLastType='mouse';
+document.addEventListener('touchmove',e=>{if(tabTouchLock&&e.cancelable)e.preventDefault()},{passive:false});
+function bindTabDrag(el,id){
+  const bar=$('ptabs');
+  let timer=null,sx=0,sy=0,st=null,pid=null,touch=false,ins=0;
+  const tabs=()=>[...bar.children];
+  const clearMarks=()=>tabs().forEach(x=>x.classList.remove('drop-l','drop-r'));
+  const insAt=cx=>{
+    let n=0;
+    tabs().forEach(x=>{
+      if(x===el)return;
+      const r=x.getBoundingClientRect();
+      if(cx>r.left+r.width/2)n++;
+    });
+    return n;
+  };
+  const mark=n=>{
+    clearMarks();
+    const others=tabs().filter(x=>x!==el);
+    if(!others.length)return;
+    if(n<others.length)others[n].classList.add('drop-l');
+    else others[others.length-1].classList.add('drop-r');
+  };
+  const edge=cx=>{
+    const r=bar.getBoundingClientRect();
+    if(cx<r.left+32)bar.scrollLeft-=14;
+    else if(cx>r.right-32)bar.scrollLeft+=14;
+  };
+  function stop(){
+    clearTimeout(timer);timer=null;
+    document.removeEventListener('pointermove',move);
+    document.removeEventListener('pointerup',up);
+    document.removeEventListener('pointercancel',cancel);
+    tabTouchLock=false;
+    el.classList.remove('lift','drag');
+    clearMarks();
+    st=null;
+  }
+  function move(e){
+    if(e.pointerId!==pid)return;
+    const d=Math.hypot(e.clientX-sx,e.clientY-sy);
+    if(st==='wait'){
+      if(touch){if(d>8)stop();return}
+      if(d<=5)return;
+      st='drag';el.classList.add('drag');
+    }else if(st==='armed'){
+      if(d<=5)return;
+      st='drag';el.classList.remove('lift');el.classList.add('drag');
+    }
+    if(st==='drag'){
+      edge(e.clientX);
+      ins=insAt(e.clientX);
+      mark(ins);
+    }
+  }
+  function up(e){
+    if(e.pointerId!==pid)return;
+    const was=st,n=ins;
+    stop();
+    if(was==='drag'){
+      tabDragAt=Date.now();
+      movePageTo(id,n);
+    }else if(was==='armed'){
+      lpFlag=true;
       const r=el.getBoundingClientRect();
       openPageMenu(id,r.left,r.bottom+4);
-    },500);
+    }
+  }
+  function cancel(e){if(e.pointerId===pid)stop()}
+  el.addEventListener('pointerdown',e=>{
+    tabLastType=e.pointerType;
+    lpFlag=false;
+    if(roRole||!e.isPrimary||e.target.closest('.x'))return;
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    if(st)stop();
+    sx=e.clientX;sy=e.clientY;pid=e.pointerId;touch=e.pointerType==='touch';
+    ins=tabs().indexOf(el);
+    st='wait';
+    if(touch)timer=setTimeout(()=>{
+      timer=null;
+      if(st==='wait'){st='armed';tabTouchLock=true;el.classList.add('lift')}
+    },450);
+    document.addEventListener('pointermove',move);
+    document.addEventListener('pointerup',up);
+    document.addEventListener('pointercancel',cancel);
   });
-  el.addEventListener('pointermove',e=>{if(timer&&Math.hypot(e.clientX-x0,e.clientY-y0)>8)clear()});
-  ['pointerup','pointercancel','pointerleave'].forEach(n=>el.addEventListener(n,clear));
 }
 function renderPages(){
   const t=$('ptabs');
@@ -2614,16 +2756,17 @@ function renderPages(){
       b.appendChild(x);
     }else b.classList.add('nx');
     b.onclick=e=>{
+      if(Date.now()-tabDragAt<300){e.stopPropagation();return}
       if(lpFlag){lpFlag=false;e.stopPropagation();menuAt=Date.now();return}
       switchPage(p.id);
     };
     b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();switchPage(p.id)}};
     b.oncontextmenu=e=>{
       e.preventDefault();
-      if(roRole)return;
+      if(roRole||tabLastType==='touch')return;
       openPageMenu(p.id,e.clientX,e.clientY);
     };
-    bindLongPress(b,p.id);
+    bindTabDrag(b,p.id);
     t.appendChild(b);
   });
   const on=t.querySelector('.pt.on');
@@ -2719,6 +2862,14 @@ async function renamePage(id){
   const n=v.trim().slice(0,30);
   if(!n||n===p.name||!pageOf(id))return;
   p.name=n;
+  structChanged();
+}
+function movePageTo(id,to){
+  if(roRole)return;
+  const i=pages.findIndex(p=>p.id===id);
+  if(i<0||to<0||to>=pages.length||to===i)return;
+  const p=pages.splice(i,1)[0];
+  pages.splice(to,0,p);
   structChanged();
 }
 function movePage(id,d){
@@ -2917,6 +3068,7 @@ async function pullCloud(){
 function handleRevoked(){
   const guest=cloud&&!cloud.owner;
   if(guest){
+    delShared(cloud.id).catch(()=>{});
     cloud=null;dirty=false;
     uiAlert('この共有は停止されたか、アクセス権が変更されました。').then(()=>{if(curId)goHome()});
   }else if(cloud){
@@ -3239,13 +3391,23 @@ function keepRemote(o){
   o.c.objects=list;
 }
 
+async function recordShared(thumb){
+  if(!cloud||cloud.owner||!curId)return;
+  try{
+    await putShared({id:cloud.id,key:cloud.key,title:$('title').value.trim(),thumb:thumb||thumbNow(),role:cloud.role,mode:cloud.mode,opened:Date.now(),pc:pages.length});
+  }catch(e){}
+}
 async function openShared(id,key){
   let r;
   try{r=await api('GET','/api/d/'+id,{key})}
-  catch(e){await uiAlert(errMsg(e));return}
+  catch(e){
+    if(e.status===403||e.status===404)await delShared(id).catch(()=>{});
+    await uiAlert(errMsg(e));
+    return e;
+  }
   try{
     const mine=(await listMeta()).find(m=>m.cloud&&m.cloud.id===id);
-    if(mine){await openDrawing(mine.id);return}
+    if(mine){delShared(id).catch(()=>{});await openDrawing(mine.id);return true}
   }catch(e){}
   clearPages();
   cloud={id,key,role:r.role,rev:r.rev,mode:r.mode,owner:false};
@@ -3258,7 +3420,9 @@ async function openShared(id,key){
     if(!ro)setTool('pen');
     setSaved(ro?'共有リンクで閲覧中':'共有リンクで編集中');
     $('size').textContent=canvas.width+' × '+canvas.height+' px';
+    recordShared();
   },true);
+  return true;
 }
 async function enterFromHash(){
   const p=parseShare();
