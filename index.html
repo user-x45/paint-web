@@ -196,7 +196,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .top #tbToggle{display:none}
 .top .ib{padding:0;width:34px;height:34px}
 .top .ib i{margin:0;font-size:20px}
-#home_btn{order:0}#title{order:1}#mundo{order:2}#mredo{order:3}#mimg{order:4}#mresize{order:4}#mdel{order:5}#save{order:6;margin-left:auto}#share{order:7}#mmore{order:8;display:none}#pexp{order:9}#pimp{order:10}
+#home_btn{order:0}#title{order:1}#mundo{order:2}#mredo{order:3}#mimg{order:4}#mresize{order:4}#mdel{order:5}#save{order:6;margin-left:auto}#share{order:7}#mmore{order:8;display:grid}#pexp{order:9}#pimp{order:10}
 #editor{position:relative}
 #mdock{display:flex;flex-direction:column;flex:none;width:64px;gap:2px;padding:6px 4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:auto}
 #mdock button{flex:none;height:56px;border:0;border-radius:8px;background:none;color:var(--ink);font:inherit;font-size:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;position:relative;cursor:pointer}
@@ -392,6 +392,7 @@ body.ro .pedit{display:none!important}
 body.pglock .ribbon,body.pglock #mdock,body.pglock #lpanel,body.pglock #lbtn,body.pglock .mtop:not(#mmore),body.pglock #mimg,body.pglock #mresize,body.pglock #mdel,body.pglock #tbToggle{display:none!important}
 body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],body.pglock #msheet [data-act="del"]{display:none}
 @media (max-height:440px){#pbar{margin:2px 6px 0}.pt{height:26px}}
+@media (min-width:721px) and (not ((pointer:coarse) and (max-height:500px))){#msheet[data-sheet="more"]{left:auto;right:8px;top:56px;bottom:auto;width:340px;max-height:calc(100% - 72px);border-radius:12px;border-bottom:1px solid var(--line);box-shadow:0 6px 24px rgba(0,0,0,.3)}}
 @media (pointer:coarse),(max-width:720px){.pt{height:34px}.pt .x{width:26px;height:26px}}
 </style>
 </head>
@@ -2367,6 +2368,7 @@ function toggleSheet(name){
   document.querySelectorAll('#msheet [data-p]').forEach(p=>p.hidden=p.dataset.p!==name);
   if(name==='text')syncTextFromSelection();
   if(name==='shape')syncShapeWidth();
+  $('msheet').dataset.sheet=name;
   $('msheet').hidden=false;
   updateMobile();
 }
