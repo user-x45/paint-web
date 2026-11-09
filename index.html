@@ -1961,19 +1961,37 @@ async function renderHome(){
   $('empty').hidden=idx.length>0;
   updateSelUI();
 }
-function prepImage(file){
+const IMG_MAX_EDGE=2048,IMG_MIN_EDGE=1280,IMG_MAX_BYTES=1500000;
+function imgLimit(mode){
+  const base=mode==='new'?Math.max(...defaultSize()):Math.max(CW,CH);
+  return Math.max(IMG_MIN_EDGE,Math.min(IMG_MAX_EDGE,base));
+}
+function drawScaled(im,w,h){
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const x=c.getContext('2d');
+  x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';
+  x.drawImage(im,0,0,w,h);
+  return c;
+}
+function prepImage(file,mode){
   return new Promise((res,rej)=>{
     const u=URL.createObjectURL(file),im=new Image();
     im.onload=()=>{
       const nw=im.naturalWidth,nh=im.naturalHeight;
       if(!nw||!nh){URL.revokeObjectURL(u);rej(new Error('size'));return}
-      const k=Math.min(1,1920/Math.max(nw,nh));
-      const w=Math.max(1,Math.round(nw*k)),h=Math.max(1,Math.round(nh*k));
-      const c=document.createElement('canvas');c.width=w;c.height=h;
-      c.getContext('2d').drawImage(im,0,0,w,h);
-      URL.revokeObjectURL(u);
       const alpha=/png|gif|webp|svg/.test(file.type);
-      res({url:c.toDataURL(alpha?'image/png':'image/jpeg',.92),w,h});
+      let k=Math.min(1,imgLimit(mode)/Math.max(nw,nh));
+      let w=Math.max(1,Math.round(nw*k)),h=Math.max(1,Math.round(nh*k));
+      let c=drawScaled(im,w,h);
+      let url=c.toDataURL(alpha?'image/png':'image/jpeg',.9);
+      let n=0;
+      while(url.length*0.75>IMG_MAX_BYTES&&Math.max(w,h)>480&&n++<6){
+        w=Math.max(1,Math.round(w*0.8));h=Math.max(1,Math.round(h*0.8));
+        c=drawScaled(im,w,h);
+        url=c.toDataURL(alpha?'image/png':'image/jpeg',.85);
+      }
+      URL.revokeObjectURL(u);
+      res({url,w,h});
     };
     im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('load'))};
     im.src=u;
@@ -1994,7 +2012,7 @@ $('imgIn').onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
   const mode=imgMode;
   let p;
-  try{p=await prepImage(f)}catch(err){toast('画像を読み込めませんでした');return}
+  try{p=await prepImage(f,mode)}catch(err){toast('画像を読み込めませんでした');return}
   if(mode==='new'){
     newDrawing();
     const n=f.name.replace(/\.[^.]+$/,'').slice(0,40);
