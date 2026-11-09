@@ -373,6 +373,21 @@ html{-webkit-tap-highlight-color:transparent}
 #cropbar .ok:hover{background:var(--accent);filter:brightness(1.1)}
 @media (prefers-color-scheme:dark){#cropbar .ok{color:#00243d}}
 @media (pointer:coarse),(max-width:720px){#cropbar button{min-height:44px}}
+#pbar{display:flex;align-items:center;gap:4px;margin:6px 8px 0;flex:none}
+#ptabs{position:relative;display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:thin;padding:2px 0}
+.pt{display:inline-flex;align-items:center;gap:4px;flex:none;height:28px;max-width:180px;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit;cursor:pointer;white-space:nowrap}
+.pt span{overflow:hidden;text-overflow:ellipsis}
+.pt i{font-size:14px;color:var(--accent)}
+.pt:hover{background:var(--hover)}
+.pt.on{background:var(--sel);border-color:var(--accent)}
+.plk{display:flex;align-items:center;gap:4px;flex:none;color:var(--accent);font-size:12px;white-space:nowrap}
+.plk i{font-size:14px}
+#pbar .ib{flex:none}
+body.ro .pedit{display:none!important}
+body.pglock .ribbon,body.pglock #mdock,body.pglock #lpanel,body.pglock #lbtn,body.pglock .mtop:not(#mmore),body.pglock #mimg,body.pglock #mresize,body.pglock #mdel,body.pglock #tbToggle{display:none!important}
+body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],body.pglock #msheet [data-act="del"]{display:none}
+@media (max-height:440px){#pbar{margin:2px 6px 0}.pt{height:26px}}
+@media (pointer:coarse),(max-width:720px){.pt{height:34px}}
 </style>
 </head>
 <body>
@@ -418,6 +433,7 @@ html{-webkit-tap-highlight-color:transparent}
     <div id="sw"></div><button class="ib" id="palBtn" title="パレット" aria-label="パレット" aria-expanded="false" data-ic="down"></button><button class="cpick" id="custom" title="色の編集" aria-label="色の編集" aria-haspopup="dialog" aria-expanded="false"><span class="cs" style="background:#0067c0"></span></button></div><small>色</small></div>
   <div class="g"><div class="row"><button class="ib" id="lbtn" title="レイヤー" aria-label="レイヤー" aria-expanded="false" data-ic="layers"></button></div><small>レイヤー</small></div>
 </div>
+<div id="pbar"><div id="ptabs" role="tablist" aria-label="ページ"></div><span class="plk" id="plk" hidden><i class="ti ti-lock" aria-hidden="true"></i>ロック中</span><button class="ib sm pedit" id="padd" title="ページを追加" aria-label="ページを追加" data-ic="plus"></button><button class="ib sm pedit" id="pmore" title="ページの操作" aria-label="ページの操作" aria-haspopup="menu" data-ic="more"></button></div>
 <div id="work">
 <nav id="mdock" aria-label="ツール">
 <button class="mt" data-mt="select"><i class="ti ti-pointer" aria-hidden="true"></i><span>選択</span></button>
@@ -545,7 +561,8 @@ const hexA=(c,a)=>{const h=c.replace('#','');const n=parseInt(h.length===3?h.rep
 let tool='pen',fg='#000000',bg='#ffffff',target='fg',lw=4,slw=4,widthPending=false,drawing=null,start=null,hist=[],redoS=[],busy=false,layers=[],activeLayer=null;
 let cropFrame=null,cropImg=null;
 let curId=null,curCreated=0,dirty=false,saveTimer=null,chain=Promise.resolve();
-let cloud=null,ro=false,pulling=false,stopped=null;
+let cloud=null,ro=false,roRole=false,pulling=false,stopped=null;
+let pages=[],pdata=new Map(),curPage=null,switching=false;
 let sentMap=new Map(),sentOrder='',sentLayers='',sentTitle='',mine=new Set(),opQ=false,needPull=false,fullFlag=false,opChain=Promise.resolve(),liveSid=null,livePts=[],liveSent=0,liveStyle=null,liveT=null,liveEnds=[],liveDrawQ=false,localT=null;
 const liveIn=new Map();
 const hints={select:'オブジェクトをクリックして移動・変形します。選択中に色を選ぶと、図形・文字・線の色が変わります。',eraser:'ドラッグで選択中のレイヤーの絵を消します。図形はクリックで削除。',pen:'ドラッグで自由に描きます。ペンの種類を切り替えられます。',text:'キャンバスをクリックして文字を入力します。もう一度「文字」を押すとフォントなどを変更できます。',line:'ドラッグで直線を描きます。',arrow:'ドラッグで矢印を描きます。',rect:'ドラッグで四角形を描きます。',ellipse:'ドラッグで楕円を描きます。'};
@@ -842,17 +859,18 @@ $('lw').oninput=e=>setLw(+e.target.value);
 $('mlw').oninput=e=>setLw(+e.target.value);
 
 function setSaved(t){$('saved').textContent=t}
-function scheduleSave(){if(!curId||ro)return;dirty=true;setSaved('自動保存: 変更あり…');clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,cloud&&wsOpen()?1500:500);queueOps()}
+function scheduleSave(){if(!curId||roRole)return;dirty=true;setSaved('自動保存: 変更あり…');clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,cloud&&wsOpen()?1500:500);queueOps()}
 function saveNow(){clearTimeout(saveTimer);chain=chain.then(doSave);return chain}
-const currentPayload=()=>({w:canvas.width,h:canvas.height,c:canvas.toJSON(),layers:layers.map(l=>({...l})),active:activeLayer});
+const pageSnap=()=>({w:canvas.width,h:canvas.height,c:canvas.toJSON(),layers:layers.map(l=>({...l})),active:activeLayer});
+const currentPayload=()=>({pages:pages.map(p=>({id:p.id,name:p.name,locked:!!p.locked,...(p.id===curPage?pageSnap():pdata.get(p.id))})),cur:curPage});
 const thumbNow=()=>canvas.toDataURL({format:'png',multiplier:Math.min(1,360/canvas.width)});
 const cloudMeta=()=>cloud&&cloud.owner?{id:cloud.id,ownerKey:cloud.ownerKey,viewKey:cloud.viewKey,editKey:cloud.editKey,mode:cloud.mode,rev:cloud.rev}:undefined;
-const persistLocal=(id,created,title,payload,thumb,now)=>putDrawing({id,title,created,updated:now,thumb,cloud:cloudMeta(),stopped:cloud?undefined:(stopped||undefined)},{id,...payload});
+const persistLocal=(id,created,title,payload,thumb,now)=>putDrawing({id,title,created,updated:now,thumb,pc:payload.pages.length,cloud:cloudMeta(),stopped:cloud?undefined:(stopped||undefined)},{id,...payload});
 async function persistLocalNow(){
   await persistLocal(curId,curCreated,$('title').value.trim(),currentPayload(),thumbNow(),Date.now());
 }
 async function doSave(){
-  if(!curId||busy||!dirty||ro)return;
+  if(!curId||busy||!dirty||roRole)return;
   const id=curId,created=curCreated;
   let remoteFail=false;
   try{
@@ -1542,6 +1560,8 @@ function resetTools(){
 function showEditor(){resetTools();closeSheet();setPanel(false);$('home').hidden=true;$('editor').hidden=false;zoom=1;$('desk').scrollLeft=0;$('desk').scrollTop=0;fitRibbon();document.title='ペイント - '+($('title').value||'無題')}
 function resetHist(){rebaseOps();hist=[snapshot()];redoS=[]}
 function newDrawing(){
+  const p0={id:uid(),name:'ページ 1',locked:false};
+  pages=[p0];pdata=new Map();curPage=p0.id;
   cloud=null;stopped=null;applyRole();
   curId=uid();curCreated=Date.now();dirty=false;
   $('title').value='';setSaved('自動保存: 描くと保存されます');
@@ -1559,14 +1579,15 @@ async function openDrawing(id,quiet){
   curId=id;curCreated=m.created||Date.now();dirty=false;
   cloud=m.cloud?{id:m.cloud.id,key:m.cloud.ownerKey,ownerKey:m.cloud.ownerKey,viewKey:m.cloud.viewKey,editKey:m.cloud.editKey,mode:m.cloud.mode,rev:m.cloud.rev,role:'owner',owner:true}:null;
   stopped=!m.cloud&&m.stopped?m.stopped:null;
+  const pd=setPages(pagesOf(d),d.cur);
   applyRole();
   $('title').value=m.title||'';setSaved('自動保存: 保存済み');
   if(!quiet)showEditor();
-  layers=normalizeLayers(d.layers||[],d.c&&d.c.background);
+  layers=normalizeLayers(pd.layers||[],pd.c&&pd.c.background);
   activeLayer=firstDrawLayer().id;
   busy=true;
-  canvas.loadFromJSON(d.c).then(()=>{
-    setSize(d.w||DEFW,d.h||DEFH);
+  canvas.loadFromJSON(pd.c).then(()=>{
+    setSize(pd.w||DEFW,pd.h||DEFH);
     busy=false;renderLayers();resetHist();setTool('pen');
     loadUsedFonts(canvas.getObjects()).then(r=>{if(r)canvas.requestRenderAll()});
   });
@@ -1575,7 +1596,7 @@ async function openDrawing(id,quiet){
 async function goHome(){
   canvas.discardActiveObject();
   await saveNow();
-  curId=null;cloud=null;stopped=null;applyRole();
+  curId=null;cloud=null;stopped=null;clearPages();applyRole();
   if(parseShare())history.replaceState(null,'',location.pathname+location.search);
   $('editor').hidden=true;$('home').hidden=false;document.title='ペイント';
   renderHome();
@@ -1592,10 +1613,11 @@ function closeMenu(){const m=$('menu');if(m)m.remove();document.querySelectorAll
 async function renderPng(id){
   const d=await getData(id);
   if(!d)throw new Error('データが見つかりません');
+  const pg=pagesOf(d)[0];
   const el=document.createElement('canvas');
-  const sc=new fabric.StaticCanvas(el,{width:d.w||DEFW,height:d.h||DEFH});
-  sc._renderObjects=makeLayeredRender(()=>d.layers||[]);
-  await sc.loadFromJSON(d.c);
+  const sc=new fabric.StaticCanvas(el,{width:pg.w||DEFW,height:pg.h||DEFH});
+  sc._renderObjects=makeLayeredRender(()=>pg.layers||[]);
+  await sc.loadFromJSON(pg.c);
   await loadUsedFonts(sc.getObjects());
   sc.renderAll();
   const url=sc.toDataURL({format:'png',multiplier:expMul(sc.width,sc.height)});
@@ -1753,7 +1775,7 @@ async function shareDrawing(m){
 }
 async function leaveQuiet(){
   await saveNow();
-  curId=null;cloud=null;stopped=null;applyRole();
+  curId=null;cloud=null;stopped=null;clearPages();applyRole();
   renderHome();
 }
 async function copyDrawing(m){
@@ -1796,7 +1818,7 @@ function openMenu(btn,m){
 }
 let menuAt=0;
 document.addEventListener('click',e=>{if(!e.target.closest('#menu')&&Date.now()-menuAt>400)closeMenu()});
-document.addEventListener('pointerdown',e=>{if(!$('menu')||e.target.closest('#menu')||e.target.closest('.card .x'))return;if(Date.now()-menuAt>400)closeMenu()},true);
+document.addEventListener('pointerdown',e=>{if(!$('menu')||e.target.closest('#menu')||e.target.closest('.card .x,#pmore'))return;if(Date.now()-menuAt>400)closeMenu()},true);
 addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
 addEventListener('resize',closeMenu);
 $('home').addEventListener('scroll',closeMenu);
@@ -1860,7 +1882,7 @@ async function renderHome(){
     const im=document.createElement('img');im.alt='';im.src=m.thumb||'';th.appendChild(im);
     const meta=document.createElement('div');meta.className='meta';
     const t=document.createElement('b');t.textContent=m.title||'無題';
-    const s=document.createElement('span');s.textContent=fmt(m.updated)+(m.cloud?' ・ '+MODES[m.cloud.mode].l:'');
+    const s=document.createElement('span');s.textContent=fmt(m.updated)+(m.pc>1?' ・ '+m.pc+'ページ':'')+(m.cloud?' ・ '+MODES[m.cloud.mode].l:'');
     meta.append(t,s);
     const x=document.createElement('button');x.className='x';x.innerHTML=ic('more');x.title='その他';
     x.setAttribute('aria-label','その他の操作');x.setAttribute('aria-haspopup','menu');
@@ -2028,7 +2050,7 @@ addEventListener('keydown',e=>{
 
 const EXT='.paint';
 const projName=t=>((t||'無題').replace(/[\\/:*?"<>|]/g,'_'))+EXT;
-const packDrawing=(title,d,thumb)=>JSON.stringify({app:'paint',v:1,title:title||'',w:d.w,h:d.h,c:d.c,layers:d.layers,active:d.active,thumb:thumb||''});
+const packDrawing=(title,d,thumb)=>JSON.stringify({app:'paint',v:2,title:title||'',pages:pagesOf(d),cur:d.cur,thumb:thumb||''});
 function downloadText(txt,name){
   const u=URL.createObjectURL(new Blob([txt],{type:'application/octet-stream'})),a=document.createElement('a');
   a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);
@@ -2037,7 +2059,7 @@ function exportCurrent(){
   canvas.discardActiveObject();canvas.renderAll();
   const title=$('title').value.trim();
   const thumb=canvas.toDataURL({format:'png',multiplier:Math.min(1,360/canvas.width)});
-  downloadText(packDrawing(title,{w:canvas.width,h:canvas.height,c:canvas.toJSON(),layers:layers.map(l=>({...l})),active:activeLayer},thumb),projName(title));
+  downloadText(packDrawing(title,currentPayload(),thumb),projName(title));
 }
 async function exportSaved(m){
   try{
@@ -2049,12 +2071,14 @@ async function exportSaved(m){
 async function importProject(f){
   let o=null;
   try{o=JSON.parse(await f.text())}catch(e){}
-  if(!o||o.app!=='paint'||!o.c||!Array.isArray(o.layers)){toast('読み込めないファイルです');return}
+  const valid=!!o&&o.app==='paint'&&(Array.isArray(o.pages)?o.pages.length>0&&o.pages.every(p=>p&&p.c&&Array.isArray(p.layers)):!!o.c&&Array.isArray(o.layers));
+  if(!valid){toast('読み込めないファイルです');return}
+  const list=pagesOf(o);
   const id=uid(),now=Date.now();
   const title=String(o.title||f.name.replace(/\.[^.]+$/,'')).slice(0,40);
   try{
     await saveNow();
-    await putDrawing({id,title,created:now,updated:now,thumb:typeof o.thumb==='string'?o.thumb:''},{id,w:o.w||DEFW,h:o.h||DEFH,c:o.c,layers:o.layers,active:o.active});
+    await putDrawing({id,title,created:now,updated:now,pc:list.length,thumb:typeof o.thumb==='string'?o.thumb:''},{id,pages:list,cur:o.cur});
   }catch(e){uiAlert('読み込めませんでした。保存容量が不足している可能性があります。');return}
   await openDrawing(id);
 }
@@ -2457,27 +2481,250 @@ function parseShare(){
   return m?{id:m[1],key:m[2]}:null;
 }
 
+const pageOf=id=>pages.find(p=>p.id===id);
+const pgLocked=()=>{const p=pageOf(curPage);return !!(p&&p.locked)};
+const canOwn=()=>!cloud||cloud.owner;
+function clearPages(){pages=[];pdata=new Map();curPage=null}
+function pagesOf(d){
+  if(Array.isArray(d.pages)&&d.pages.length)return d.pages.map(p=>({id:String(p.id||uid()),name:p.name||'',locked:!!p.locked,w:p.w,h:p.h,c:p.c||{objects:[]},layers:p.layers||[],active:p.active}));
+  return[{id:'p0',name:'',locked:false,w:d.w,h:d.h,c:d.c||{objects:[]},layers:d.layers||[],active:d.active}];
+}
+function setPages(list,want){
+  pages=list.map((p,i)=>({id:p.id,name:(p.name||'ページ '+(i+1)).slice(0,30),locked:!!p.locked}));
+  pdata=new Map();
+  list.forEach(p=>pdata.set(p.id,{w:p.w,h:p.h,c:p.c,layers:p.layers,active:p.active}));
+  curPage=pdata.has(want)?want:list[0].id;
+  const d=pdata.get(curPage);
+  pdata.delete(curPage);
+  return d;
+}
+function renderPages(){
+  const t=$('ptabs');
+  if(!t)return;
+  t.innerHTML='';
+  pages.forEach(p=>{
+    const b=document.createElement('button');
+    b.className='pt'+(p.id===curPage?' on':'')+(p.locked?' lk':'');
+    b.setAttribute('role','tab');
+    b.setAttribute('aria-selected',String(p.id===curPage));
+    if(p.locked)b.innerHTML=ic('lock');
+    const s=document.createElement('span');s.textContent=p.name;b.appendChild(s);
+    b.onclick=()=>switchPage(p.id);
+    t.appendChild(b);
+  });
+  const on=t.querySelector('.pt.on');
+  if(on){
+    if(on.offsetLeft<t.scrollLeft)t.scrollLeft=on.offsetLeft;
+    else if(on.offsetLeft+on.offsetWidth>t.scrollLeft+t.clientWidth)t.scrollLeft=on.offsetLeft+on.offsetWidth-t.clientWidth;
+  }
+  $('plk').hidden=!pgLocked();
+}
+function syncRo(){
+  if(ro!==(roRole||pgLocked()))applyRole();
+  else renderPages();
+}
+function structChanged(){
+  fullFlag=true;
+  scheduleSave();
+  renderPages();
+}
+async function enterPage(id,keepOld){
+  if(switching)return;
+  switching=true;
+  try{
+    await idle();
+    if(cropFrame)finishCrop('cancel');
+    canvas.discardActiveObject();
+    if(keepOld&&cloud&&!ro){
+      if(dirty||opQ)fullFlag=true;
+      sendOps();
+    }
+    const d=pdata.get(id);
+    if(!d)return;
+    busy=true;
+    if(keepOld)pdata.set(curPage,pageSnap());
+    pdata.delete(id);
+    curPage=id;
+    layers=normalizeLayers(d.layers||[],d.c&&d.c.background);
+    activeLayer=d.active&&layers.some(l=>l.id===d.active&&!l.bg)?d.active:firstDrawLayer().id;
+    await canvas.loadFromJSON(d.c);
+    setSize(d.w||DEFW,d.h||DEFH);
+    busy=false;
+    resetZoom();
+    renderLayers();
+    resetHist();
+    syncRo();
+    applyLayerState();
+    setTool(tool);
+    loadUsedFonts(canvas.getObjects()).then(r=>{if(r)canvas.requestRenderAll()});
+  }catch(e){
+    busy=false;
+  }finally{
+    switching=false;
+  }
+}
+function switchPage(id){
+  if(id===curPage||!pageOf(id))return;
+  enterPage(id,true);
+}
+function addPage(){
+  if(roRole||switching)return;
+  canvas.discardActiveObject();
+  const B=layers[0],color=B&&B.bg?B.color:'#ffffff';
+  const ls=defaultLayers(color);
+  let n=1;
+  while(pages.some(p=>p.name==='ページ '+n))n++;
+  const p={id:uid(),name:'ページ '+n,locked:false};
+  const i=pages.findIndex(x=>x.id===curPage);
+  pages.splice(i+1,0,p);
+  pdata.set(p.id,{w:CW,h:CH,c:{objects:[],background:color},layers:ls,active:ls[1].id});
+  structChanged();
+  enterPage(p.id,true);
+}
+function dupPage(){
+  if(roRole||switching)return;
+  canvas.discardActiveObject();
+  const src=pageOf(curPage);
+  const cp=JSON.parse(JSON.stringify(pageSnap()));
+  const p={id:uid(),name:(src.name+' のコピー').slice(0,30),locked:false};
+  pages.splice(pages.indexOf(src)+1,0,p);
+  pdata.set(p.id,cp);
+  structChanged();
+  enterPage(p.id,true);
+}
+async function renamePage(){
+  const p=pageOf(curPage);
+  if(!p||roRole||p.locked)return;
+  const v=await uiPrompt('ページ名',p.name);
+  if(v===null)return;
+  const n=v.trim().slice(0,30);
+  if(!n||n===p.name)return;
+  p.name=n;
+  structChanged();
+}
+function movePage(d){
+  if(roRole)return;
+  const i=pages.findIndex(p=>p.id===curPage),j=i+d;
+  if(i<0||j<0||j>=pages.length)return;
+  const t=pages[i];pages[i]=pages[j];pages[j]=t;
+  structChanged();
+}
+function toggleLock(){
+  const p=pageOf(curPage);
+  if(!p||roRole||!canOwn())return;
+  canvas.discardActiveObject();
+  p.locked=!p.locked;
+  structChanged();
+  syncRo();
+  toast(p.locked?'このページをロックしました':'ロックを解除しました');
+}
+async function deletePage(){
+  const p=pageOf(curPage);
+  if(!p||roRole||switching)return;
+  if(pages.length<2){toast('最後のページは削除できません');return}
+  if(p.locked){toast('ロックされたページは削除できません。先にロックを解除してください');return}
+  if(!await uiConfirm('ページ「'+p.name+'」と、その中の絵をすべて削除しますか？',{ok:'削除',danger:true}))return;
+  const i=pages.indexOf(p);
+  if(i<0)return;
+  pages.splice(i,1);
+  const next=pages[Math.min(i,pages.length-1)];
+  structChanged();
+  enterPage(next.id,false);
+}
+function openPageMenu(btn){
+  const old=$('menu');
+  if(old&&old.dataset.for==='page'){closeMenu();return}
+  closeMenu();
+  const p=pageOf(curPage);
+  if(!p)return;
+  const i=pages.indexOf(p),own=canOwn();
+  const items=[
+    ['名前を変更',renamePage,0,'pencil',p.locked],
+    ['複製',dupPage,0,'copy',false],
+    ['左へ移動',()=>movePage(-1),0,'arrow-left',i<1],
+    ['右へ移動',()=>movePage(1),0,'arrow-right',i>=pages.length-1],
+    [p.locked?(own?'ロックを解除':'ロック解除（作成者のみ）'):(own?'ロックする':'ロック（作成者のみ）'),toggleLock,0,p.locked?'lock-open':'lock',!own],
+    ['削除',deletePage,1,'trash',p.locked||pages.length<2]
+  ];
+  const menu=document.createElement('div');menu.id='menu';menu.dataset.for='page';menu.setAttribute('role','menu');
+  items.forEach(([l,fn,danger,icon,off])=>{
+    const b=document.createElement('button');b.setAttribute('role','menuitem');
+    const ii=document.createElement('i');ii.className='ti ti-'+icon;ii.setAttribute('aria-hidden','true');b.append(ii,l);
+    if(danger)b.classList.add('danger');
+    b.disabled=!!off;
+    b.onclick=e=>{e.stopPropagation();closeMenu();fn()};
+    menu.appendChild(b);
+  });
+  menuAt=Date.now();
+  document.body.appendChild(menu);
+  const r=btn.getBoundingClientRect(),mw=menu.offsetWidth,mh=menu.offsetHeight;
+  menu.style.left=Math.max(8,Math.min(r.right-mw,innerWidth-mw-8))+'px';
+  menu.style.top=Math.max(8,r.bottom+mh+8>innerHeight?r.top-mh-4:r.bottom+4)+'px';
+  const f=menu.querySelector('button:not(:disabled)');
+  if(f)f.focus();
+}
+$('padd').onclick=addPage;
+$('pmore').onclick=()=>openPageMenu($('pmore'));
+function persistSoon(){
+  if(cloud&&cloud.owner){
+    clearTimeout(localT);
+    localT=setTimeout(()=>{if(cloud&&cloud.owner&&!dirty)persistLocalNow().catch(()=>{})},3000);
+  }
+}
+function applyOpData(m){
+  if(m.n!==undefined){
+    sentTitle=m.n;
+    if(document.activeElement!==$('title'))$('title').value=m.n;
+    document.title='ペイント - '+(m.n||'無題');
+  }
+  const pd=pdata.get(m.pg);
+  if(!pd)return;
+  if(m.l)pd.layers=m.l.map(l=>({...l}));
+  const c=pd.c||(pd.c={objects:[]});
+  let list=(c.objects||[]).slice();
+  const del=new Set(m.d||[]);
+  if(del.size)list=list.filter(o=>!(o.oid&&del.has(o.oid)));
+  (m.a||[]).forEach(n=>{
+    if(!n||!n.oid)return;
+    const i=list.findIndex(o=>o.oid===n.oid);
+    if(i>=0)list[i]=n;else list.push(n);
+  });
+  if(m.r){
+    const pos=new Map();
+    m.r.forEach((id,i)=>pos.set(id,i));
+    const known=list.filter(o=>pos.has(o.oid)).sort((x,y)=>pos.get(x.oid)-pos.get(y.oid));
+    const rest=list.filter(o=>!pos.has(o.oid));
+    list=known.concat(rest);
+  }
+  c.objects=list;
+  persistSoon();
+}
+
 function applyRole(){
   const was=ro;
-  ro=!!cloud&&cloud.role==='view';
-  document.body.classList.toggle('ro',ro);
+  roRole=!!cloud&&cloud.role==='view';
+  const lk=pgLocked();
+  ro=roRole||lk;
+  document.body.classList.toggle('ro',roRole);
+  document.body.classList.toggle('pglock',lk&&!roRole);
   document.body.classList.toggle('guest',!!cloud&&!cloud.owner);
-  $('title').readOnly=ro;
+  $('title').readOnly=roRole;
   if(ro){
     tool='select';
     canvas.isDrawingMode=false;canvas.selection=false;canvas.skipTargetFind=true;canvas.defaultCursor='default';
     canvas.discardActiveObject();canvas.requestRenderAll();
-    $('hint').textContent='閲覧専用です。編集はできません。';
-    setSaved('共有リンクで閲覧中');
+    $('hint').textContent=roRole?'閲覧専用です。編集はできません。':'このページはロックされています。ロックを解除すると編集できます。';
+    if(roRole)setSaved('共有リンクで閲覧中');
   }else{
     canvas.skipTargetFind=false;
     if(was&&curId){setTool('pen');setSaved(cloud?'共有リンクで編集中':'自動保存: 保存済み')}
   }
+  renderPages();
   syncSocket();
   syncUrl();
 }
 ['keydown','paste','cut','drop','contextmenu'].forEach(t=>addEventListener(t,e=>{
-  if(!ro||(t==='keydown'&&(e.key==='Escape'||e.ctrlKey||e.metaKey)))return;
+  if(!ro||(t==='keydown'&&(e.key==='Escape'||e.ctrlKey||e.metaKey||/^(INPUT|TEXTAREA)$/.test(e.target.tagName||''))))return;
   e.stopImmediatePropagation();
   if(t!=='keydown')e.preventDefault();
 },true));
@@ -2493,12 +2740,13 @@ function syncUrl(){
 
 function applyData(d,done,fresh){
   const keep=activeLayer;
-  layers=normalizeLayers(d.layers||[],d.c&&d.c.background);
+  const pd=setPages(pagesOf(d),fresh?d.cur:curPage);
+  layers=normalizeLayers(pd.layers||[],pd.c&&pd.c.background);
   activeLayer=fresh?firstDrawLayer().id:layers.some(l=>l.id===keep)?keep:firstDrawLayer().id;
   busy=true;
-  canvas.loadFromJSON(d.c).then(()=>{
-    setSize(d.w||DEFW,d.h||DEFH);
-    busy=false;renderLayers();resetHist();setTool(tool);
+  canvas.loadFromJSON(pd.c).then(()=>{
+    setSize(pd.w||DEFW,pd.h||DEFH);
+    busy=false;renderLayers();resetHist();syncRo();setTool(tool);
     loadUsedFonts(canvas.getObjects()).then(r=>{if(r)canvas.requestRenderAll()});
     if(done)done();
   });
@@ -2665,6 +2913,7 @@ function queueLiveDraw(){
 }
 function onLive(m){
   if(m.e){liveIn.delete(m.s);queueLiveDraw();return}
+  if(m.pg&&m.pg!==curPage)return;
   let s=liveIn.get(m.s);
   if(!s){s={p:[],c:'#000',w:4,k:'round',t:0};liveIn.set(m.s,s)}
   if(m.c)s.c=m.c;
@@ -2699,7 +2948,7 @@ function liveFlush(){
   if(!liveSid||liveSent>=livePts.length)return;
   const pts=livePts.slice(liveSent);
   liveSent=livePts.length;
-  sendWs('{"t":"live","by":"'+cid+'","s":"'+liveSid+'","c":'+JSON.stringify(liveStyle.c)+',"w":'+liveStyle.w+',"k":'+JSON.stringify(liveStyle.k)+',"p":'+JSON.stringify(pts)+'}');
+  sendWs('{"t":"live","by":"'+cid+'","pg":'+JSON.stringify(curPage)+',"s":"'+liveSid+'","c":'+JSON.stringify(liveStyle.c)+',"w":'+liveStyle.w+',"k":'+JSON.stringify(liveStyle.k)+',"p":'+JSON.stringify(pts)+'}');
 }
 function liveStop(){
   if(!liveSid)return;
@@ -2760,7 +3009,7 @@ function sendOps(){
   if(ls!==sentLayers)parts.push('"l":'+ls);
   if(title!==sentTitle)parts.push('"n":'+JSON.stringify(title));
   if(parts.length){
-    const msg='{"t":"op","by":"'+cid+'",'+parts.join(',')+'}';
+    const msg='{"t":"op","by":"'+cid+'","pg":'+JSON.stringify(curPage)+','+parts.join(',')+'}';
     if(msg.length>4000000)fullFlag=true;
     else sendWs(msg);
     addIds.forEach(id=>mine.add(id));
@@ -2779,10 +3028,12 @@ function applyOp(m){opChain=opChain.then(()=>applyOpNow(m)).catch(()=>{})}
 async function applyOpNow(m){
   await idle();
   if(!cloud)return;
+  if(m.pg&&m.pg!==curPage){applyOpData(m);return}
   let objs=[];
   if(m.a&&m.a.length)objs=await fabric.util.enlivenObjects(m.a);
   await idle();
   if(!cloud)return;
+  if(m.pg&&m.pg!==curPage){applyOpData(m);return}
   const act=new Set(canvas.getActiveObjects());
   const ao=canvas.getActiveObject();
   const hold=!!canvas._currentTransform||!!(ao&&ao.isEditing);
@@ -2847,10 +3098,7 @@ async function applyOpNow(m){
   }finally{
     busy=false;
   }
-  if(cloud&&cloud.owner){
-    clearTimeout(localT);
-    localT=setTimeout(()=>{if(cloud&&cloud.owner&&!dirty)persistLocalNow().catch(()=>{})},3000);
-  }
+  persistSoon();
 }
 function keepRemote(o){
   if(!cloud||!o||!o.c||!o.c.objects)return;
@@ -2874,6 +3122,7 @@ async function openShared(id,key){
     const mine=(await listMeta()).find(m=>m.cloud&&m.cloud.id===id);
     if(mine){await openDrawing(mine.id);return}
   }catch(e){}
+  clearPages();
   cloud={id,key,role:r.role,rev:r.rev,mode:r.mode,owner:false};
   stopped=null;
   curId='g'+id;curCreated=Date.now();dirty=false;
