@@ -661,7 +661,13 @@ function setSize(w,h){
   fitView();canvas.renderAll();
   $('size').textContent=w+' × '+h+' px';
 }
-function fit(){setSize(DEFW,DEFH)}
+function defaultSize(){
+  const r=window.devicePixelRatio||1;
+  const sw=Math.round((screen.width||1920)*r),sh=Math.round((screen.height||1080)*r);
+  const lim=v=>Math.max(320,Math.min(SIZE_MAX,Math.round(v*0.6)));
+  return[lim(Math.max(sw,sh)),lim(Math.min(sw,sh))];
+}
+function fit(){const d=defaultSize();setSize(d[0],d[1])}
 new ResizeObserver(fitView).observe($('desk'));
 
 const COLORS='000000 7f7f7f 880015 ed1c24 ff7f27 fff200 22b14c 00a2e8 3f48cc a349a4 ffffff c3c3c3 b97a57 ffaec9 ffc90e efe4b0 b5e61d 99d9ea 7092be c8bfe7'.split(' ');
@@ -2140,7 +2146,7 @@ $('pimp').onclick=pickProject;
 $('pexp').onclick=exportCurrent;
 
 const SIZE_MIN=16,SIZE_MAX=4096;
-const SIZE_PRESETS=[['標準',1152,648],['正方形',1080,1080],['フルHD',1920,1080],['縦長',1080,1920],['4:3',1024,768],['小',640,480]];
+const SIZE_PRESETS=[['標準',defaultSize()[0],defaultSize()[1]],['正方形',1080,1080],['フルHD',1920,1080],['縦長',1080,1920],['4:3',1024,768],['小',640,480]];
 const SIZE_MODES=[['tl','左上基準','絵の位置はそのままで、キャンバスの大きさだけ変わります。'],['center','中央基準','絵をキャンバスの中央に移動します。'],['scale','拡大縮小','絵を縦横比を保ったまま、キャンバスに合わせて拡大・縮小します。']];
 function resizeCanvas(nw,nh,mode){
   const ow=CW,oh=CH;
