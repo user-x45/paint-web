@@ -959,9 +959,13 @@ function applyBrush(){
   b.shadow=t.glow?new fabric.Shadow({blur:lw*t.glow,color:fg,offsetX:0,offsetY:0}):null;
   if(t.spray){b.density=Math.max(10,lw*4);b.dotWidth=Math.max(1,lw/3);b.dotWidthVariance=Math.max(1,lw/4);b.randomOpacity=true;b.optimizeOverlapping=true}
 }
+const svgCur=(svg,x,y,fb)=>'url("data:image/svg+xml,'+encodeURIComponent(svg)+'") '+x+' '+y+', '+fb;
+const CUR_CROSS=svgCur('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M12 2V22M2 12H22" stroke="#000" stroke-width="3.5" fill="none"/><path d="M12 3V21M3 12H21" stroke="#fff" stroke-width="1.5" fill="none"/></svg>',12,12,'crosshair');
+const CUR_ARROW=svgCur('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M4 3V19L8.2 15L11 21.5L14 20.2L11.2 14H17Z" fill="#000" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>',4,3,'default');
+canvas.freeDrawingCursor=CUR_CROSS;
 function setTool(t){
   if(cropFrame)finishCrop('cancel');
-  if(ro){canvas.isDrawingMode=false;canvas.selection=false;canvas.skipTargetFind=true;canvas.defaultCursor='default';return}
+  if(ro){canvas.isDrawingMode=false;canvas.selection=false;canvas.skipTargetFind=true;canvas.defaultCursor=CUR_ARROW;return}
   canvas.skipTargetFind=false;
   tool=t;
   document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
@@ -969,7 +973,7 @@ function setTool(t){
   applyLayerState();
   canvas.discardActiveObject();
   refreshMode();
-  canvas.defaultCursor=t==='select'?'default':'crosshair';
+  canvas.defaultCursor=t==='select'?CUR_ARROW:CUR_CROSS;
   canvas.renderAll();
   updateMobile();
 }
@@ -2810,7 +2814,7 @@ function applyRole(){
   $('title').readOnly=roRole;
   if(ro){
     tool='select';
-    canvas.isDrawingMode=false;canvas.selection=false;canvas.skipTargetFind=true;canvas.defaultCursor='default';
+    canvas.isDrawingMode=false;canvas.selection=false;canvas.skipTargetFind=true;canvas.defaultCursor=CUR_ARROW;
     canvas.discardActiveObject();canvas.requestRenderAll();
     $('hint').textContent=roRole?'閲覧専用です。編集はできません。':'このページはロックされています。ロックを解除すると編集できます。';
     if(roRole)setSaved('共有リンクで閲覧中');
