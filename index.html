@@ -2029,6 +2029,7 @@ async function openSharedEntry(m){
   const r=await openShared(m.id,m.key);
   if(r&&r!==true&&(r.status===404||r.status===403))renderShared(true);
 }
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('home').hidden)renderShared()});
 $('sharedClear').onclick=async()=>{
   if(!await uiConfirm('共有された作品の履歴をすべて削除しますか？\n共有元の作品は削除されません。',{ok:'削除',danger:true}))return;
   try{await clearShared()}catch(err){toast('削除に失敗しました')}
