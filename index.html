@@ -374,7 +374,8 @@ html{-webkit-tap-highlight-color:transparent}
 @media (prefers-color-scheme:dark){#cropbar .ok{color:#00243d}}
 @media (pointer:coarse),(max-width:720px){#cropbar button{min-height:44px}}
 #pbar{display:flex;align-items:center;gap:4px;margin:6px 8px 0;flex:none}
-#ptabs{position:relative;display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:thin;padding:2px 0}
+#ptabs{position:relative;display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:2px 0}
+#ptabs::-webkit-scrollbar{display:none}
 .pt{display:inline-flex;align-items:center;gap:4px;flex:none;height:28px;max-width:200px;padding:0 6px 0 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap;-webkit-touch-callout:none}
 .pt.nx{padding-right:12px}
 .pt .x{display:grid;place-items:center;flex:none;width:18px;height:18px;margin-left:2px;padding:0;border:0;border-radius:4px;background:none;color:var(--muted);cursor:pointer}
@@ -2567,6 +2568,7 @@ function bindLongPress(el,id){
 function renderPages(){
   const t=$('ptabs');
   if(!t)return;
+  if(!t._wh){t._wh=1;t.addEventListener('wheel',e=>{if(e.deltaX||t.scrollWidth<=t.clientWidth)return;e.preventDefault();t.scrollLeft+=e.deltaY},{passive:false})}
   t.innerHTML='';
   pages.forEach(p=>{
     const b=document.createElement('div');
