@@ -397,6 +397,10 @@ body.pglock .ribbon,body.pglock #mdock,body.pglock #lpanel,body.pglock #lbtn,bod
 body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],body.pglock #msheet [data-act="del"]{display:none}
 @media (max-height:440px){#pbar{margin:2px 6px 0}.pt{height:26px}}
 @media (pointer:coarse),(max-width:720px){.pt{height:34px}.pt .x{width:26px;height:26px}}
+#menu .mgrp{position:relative}
+#menu .msub{position:absolute;z-index:1;min-width:170px;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.3);padding:4px}
+#menu .msub[hidden]{display:none}
+#menu button i.chev{float:right;margin:2px 0 0;font-size:14px;opacity:.6}
 </style>
 </head>
 <body>
@@ -431,10 +435,6 @@ body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],bod
     <button class="ib" data-t="text" title="テキスト" data-ic="text"></button>
     <button class="ib" id="fillT" data-t="fill" title="塗りつぶし (G)" data-ic="fill"></button>
     <button class="ib" id="pickT" data-t="picker" title="色の選択 (I)" data-ic="picker"></button></div><small>ツール</small></div>
-  <div class="g"><div class="row">
-    <button class="ib" id="rotr" title="右へ90°回転" data-ic="rotr"></button>
-    <button class="ib" id="fliph" title="左右反転" data-ic="fliph"></button>
-    <button class="ib" id="flipv" title="上下反転" data-ic="flipv"></button></div><small>変形</small></div>
   <div class="g"><div class="row"><select id="pent" aria-label="ペンの種類"><option value="pen">ペン</option><option value="pencil">鉛筆</option><option value="fine">細ペン</option><option value="marker">マーカー</option><option value="highlighter">蛍光ペン</option><option value="dashed">点線</option><option value="neon">ネオン</option><option value="spray">スプレー</option><option value="dots">点描</option></select></div><small>ペンの種類</small></div>
   <div class="g"><div class="row" id="shapes">
     <button class="ib" data-t="line" title="直線" data-ic="line"></button>
@@ -504,9 +504,6 @@ body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],bod
 <button class="mbtn" data-act="del"><i class="ti ti-trash" aria-hidden="true"></i>選択を削除</button>
 <button class="mbtn" data-act="fill"><i class="ti ti-bucket" aria-hidden="true"></i>塗りつぶし</button>
 <button class="mbtn" data-act="picker"><i class="ti ti-color-picker" aria-hidden="true"></i>色の選択</button>
-<button class="mbtn" data-act="rotr"><i class="ti ti-rotate-clockwise-2" aria-hidden="true"></i>右へ90°回転</button>
-<button class="mbtn" data-act="fliph"><i class="ti ti-flip-horizontal" aria-hidden="true"></i>左右反転</button>
-<button class="mbtn" data-act="flipv"><i class="ti ti-flip-vertical" aria-hidden="true"></i>上下反転</button>
 </div>
 <div class="mrowx"><label>表示</label><button class="ib" id="mzout" title="縮小" aria-label="縮小" data-ic="zoomout"></button><button class="mbtn" id="mzpct" style="flex:1;min-height:40px">100%</button><button class="ib" id="mzin" title="拡大" aria-label="拡大" data-ic="zoomin"></button></div>
 </div>
@@ -515,7 +512,7 @@ body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],bod
 
 <script>
 const $=id=>document.getElementById(id);
-const P={fill:'ti ti-bucket',picker:'ti ti-color-picker',rotr:'ti ti-rotate-clockwise-2',fliph:'ti ti-flip-horizontal',flipv:'ti ti-flip-vertical',select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',crop:'ti ti-crop',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out',dblarrow:'ti ti-arrows-horizontal',roundrect:'ti ti-square-rounded',triangle:'ti ti-triangle',diamond:'ti ti-diamond',pentagon:'ti ti-pentagon',hexagon:'ti ti-hexagon',star:'ti ti-star',heart:'ti ti-heart',bubble:'ti ti-message',cross:'ti ti-plus',tofront:'ti ti-arrow-bar-up',forward:'ti ti-arrow-up',backward:'ti ti-arrow-down',toback:'ti ti-arrow-bar-down',copy:'ti ti-copy',paste:'ti ti-clipboard',info:'ti ti-info-circle',check:'ti ti-check',fexport:'ti ti-file-export',fimport:'ti ti-file-import',resize:'ti ti-dimensions'};
+const P={fill:'ti ti-bucket',rotl:'ti ti-rotate-2',rotr:'ti ti-rotate-clockwise-2',fliph:'ti ti-flip-horizontal',flipv:'ti ti-flip-vertical',picker:'ti ti-color-picker',select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',crop:'ti ti-crop',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out',dblarrow:'ti ti-arrows-horizontal',roundrect:'ti ti-square-rounded',triangle:'ti ti-triangle',diamond:'ti ti-diamond',pentagon:'ti ti-pentagon',hexagon:'ti ti-hexagon',star:'ti ti-star',heart:'ti ti-heart',bubble:'ti ti-message',cross:'ti ti-plus',tofront:'ti ti-arrow-bar-up',forward:'ti ti-arrow-up',backward:'ti ti-arrow-down',toback:'ti ti-arrow-bar-down',copy:'ti ti-copy',paste:'ti ti-clipboard',info:'ti ti-info-circle',check:'ti ti-check',fexport:'ti ti-file-export',fimport:'ti ti-file-import',resize:'ti ti-dimensions'};
 const ic=n=>'<i class="'+P[n]+'" aria-hidden="true"></i>';
 document.querySelectorAll('[data-ic]').forEach(b=>{b.innerHTML=ic(b.dataset.ic)});
 
@@ -1119,16 +1116,13 @@ canvas.on('mouse:down',o=>{
 function transformSel(kind){
   const ao=canvas.getActiveObject();
   if(!ao){toast('先にオブジェクトを選択してください');return}
-  if(kind==='rot'){const c=ao.getCenterPoint();ao.rotate((ao.angle||0)+90);ao.setPositionByOrigin(c,'center','center')}
-  else if(kind==='fh')ao.set('flipX',!ao.flipX);
+  if(kind==='rotr'||kind==='rotl'){const c=ao.getCenterPoint();ao.rotate((ao.angle||0)+(kind==='rotr'?90:-90));ao.setPositionByOrigin(c,'center','center')}
+  else if(kind==='fliph')ao.set('flipX',!ao.flipX);
   else ao.set('flipY',!ao.flipY);
   ao.setCoords();
   canvas.requestRenderAll();
   canvas.fire('object:modified',{target:ao});
 }
-$('rotr').onclick=()=>transformSel('rot');
-$('fliph').onclick=()=>transformSel('fh');
-$('flipv').onclick=()=>transformSel('fv');
 function selectAllObjects(){
   if(tool!=='select')setTool('select');
   const objs=canvas.getObjects().filter(o=>o.selectable&&o.visible);
@@ -1393,15 +1387,43 @@ async function pasteAt(pt){
 function openCtxMenu(x,y,items){
   closeMenu();
   const menu=document.createElement('div');menu.id='menu';menu.setAttribute('role','menu');
-  items.forEach(it=>{
-    if(!it){const d=document.createElement('div');d.className='msep';menu.appendChild(d);return}
+  const addItem=(it,host)=>{
+    if(!it){const d=document.createElement('div');d.className='msep';host.appendChild(d);return}
+    if(it.items){
+      const grp=document.createElement('div');grp.className='mgrp';
+      const h=document.createElement('button');h.setAttribute('role','menuitem');h.setAttribute('aria-haspopup','true');h.setAttribute('aria-expanded','false');
+      h.innerHTML=ic(it.icon)+it.label+'<i class="ti ti-chevron-right chev" aria-hidden="true"></i>';
+      const sub=document.createElement('div');sub.className='msub';sub.hidden=true;
+      it.items.forEach(x=>addItem(x,sub));
+      const closeSubs=()=>menu.querySelectorAll('.msub').forEach(x=>{x.hidden=true;x.previousSibling.setAttribute('aria-expanded','false')});
+      const openSub=()=>{
+        closeSubs();
+        sub.hidden=false;h.setAttribute('aria-expanded','true');
+        sub.style.top='-5px';
+        const gr=grp.getBoundingClientRect(),sw=sub.offsetWidth;
+        const room=innerWidth-8-gr.right,roomL=gr.left-8;
+        const right=room>=sw||room>=roomL;
+        sub.style.left=right?'100%':'auto';sub.style.right=right?'auto':'100%';
+        const r=sub.getBoundingClientRect();
+        if(r.bottom>innerHeight-8)sub.style.top=(-5-(r.bottom-innerHeight+8))+'px';
+        const r2=sub.getBoundingClientRect();
+        if(r2.top<8)sub.style.top=(parseFloat(sub.style.top)+8-r2.top)+'px';
+      };
+      h.onclick=e=>{e.stopPropagation();if(sub.hidden)openSub();else closeSubs()};
+      grp.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')openSub()});
+      grp.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')closeSubs()});
+      grp.append(h,sub);
+      host.appendChild(grp);
+      return;
+    }
     const b=document.createElement('button');b.setAttribute('role','menuitem');
     b.innerHTML=ic(it[0])+it[1];
     if(it[3])b.className='danger';
     if(it[4])b.disabled=true;
     b.onclick=e=>{e.stopPropagation();closeMenu();it[2]()};
-    menu.appendChild(b);
-  });
+    host.appendChild(b);
+  };
+  items.forEach(it=>addItem(it,menu));
   document.body.appendChild(menu);
   menuAt=Date.now();
   const mw=menu.offsetWidth,mh=menu.offsetHeight;
@@ -1419,7 +1441,7 @@ function showMenuAt(cx,cy){
   if(tool!=='select')setTool('select');
   if(o!==canvas.getActiveObject())canvas.setActiveObject(o);
   canvas.requestRenderAll();
-  openCtxMenu(cx,cy,[['tofront','最前面へ',()=>stackMove('front')],['forward','前面へ',()=>stackMove('forward')],['backward','背面へ',()=>stackMove('backward')],['toback','最背面へ',()=>stackMove('back')],null,...(isImg(o)?[['crop','切り抜き',startCrop],null]:[]),['copy','コピー',copySelection],null,['trash','削除',()=>$('del').click(),1]]);
+  openCtxMenu(cx,cy,[{icon:'tofront',label:'重なり順',items:[['tofront','最前面へ',()=>stackMove('front')],['forward','前面へ',()=>stackMove('forward')],['backward','背面へ',()=>stackMove('backward')],['toback','最背面へ',()=>stackMove('back')]]},{icon:'rotr',label:'回転・反転',items:[['rotl','左に回転',()=>transformSel('rotl')],['rotr','右に回転',()=>transformSel('rotr')],['fliph','左右反転',()=>transformSel('fliph')],['flipv','上下反転',()=>transformSel('flipv')]]},null,...(isImg(o)?[['crop','切り抜き',startCrop],null]:[]),['copy','コピー',copySelection],null,['trash','削除',()=>$('del').click(),1]]);
 }
 (function(){
   const el=canvas.upperCanvasEl,pts=new Set();
@@ -2594,7 +2616,7 @@ $('mundo').onclick=()=>$('undo').click();
 $('mredo').onclick=()=>$('redo').click();
 $('mmore').onclick=()=>toggleSheet('more');
 $('mclose').onclick=closeSheet;
-const ACTS={fill:'fillT',picker:'pickT',rotr:'rotr',fliph:'fliph',flipv:'flipv',resize:'mresize',img:'imgBtn',save:'save',share:'share',del:'del',export:'pexp',import:'pimp'};
+const ACTS={fill:'fillT',picker:'pickT',resize:'mresize',img:'imgBtn',save:'save',share:'share',del:'del',export:'pexp',import:'pimp'};
 document.querySelectorAll('#msheet [data-act]').forEach(b=>b.onclick=()=>{$(ACTS[b.dataset.act]).click();closeSheet()});
 $('mzout').onclick=()=>$('zout').click();
 $('mzin').onclick=()=>$('zin').click();
