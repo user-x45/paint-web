@@ -428,7 +428,13 @@ body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],bod
     <button class="ib" data-t="select" title="選択" data-ic="select"></button>
     <button class="ib on" data-t="pen" title="ペン" data-ic="pen"></button>
     <button class="ib" data-t="eraser" title="消しゴム" data-ic="eraser"></button>
-    <button class="ib" data-t="text" title="テキスト" data-ic="text"></button></div><small>ツール</small></div>
+    <button class="ib" data-t="text" title="テキスト" data-ic="text"></button>
+    <button class="ib" id="fillT" data-t="fill" title="塗りつぶし (G)" data-ic="fill"></button>
+    <button class="ib" id="pickT" data-t="picker" title="色の選択 (I)" data-ic="picker"></button></div><small>ツール</small></div>
+  <div class="g"><div class="row">
+    <button class="ib" id="rotr" title="右へ90°回転" data-ic="rotr"></button>
+    <button class="ib" id="fliph" title="左右反転" data-ic="fliph"></button>
+    <button class="ib" id="flipv" title="上下反転" data-ic="flipv"></button></div><small>変形</small></div>
   <div class="g"><div class="row"><select id="pent" aria-label="ペンの種類"><option value="pen">ペン</option><option value="pencil">鉛筆</option><option value="fine">細ペン</option><option value="marker">マーカー</option><option value="highlighter">蛍光ペン</option><option value="dashed">点線</option><option value="neon">ネオン</option><option value="spray">スプレー</option><option value="dots">点描</option></select></div><small>ペンの種類</small></div>
   <div class="g"><div class="row" id="shapes">
     <button class="ib" data-t="line" title="直線" data-ic="line"></button>
@@ -496,6 +502,11 @@ body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],bod
 <button class="mbtn" data-act="export"><i class="ti ti-file-export" aria-hidden="true"></i>ファイルに書き出し</button>
 <button class="mbtn" data-act="import"><i class="ti ti-file-import" aria-hidden="true"></i>ファイルを読み込む</button>
 <button class="mbtn" data-act="del"><i class="ti ti-trash" aria-hidden="true"></i>選択を削除</button>
+<button class="mbtn" data-act="fill"><i class="ti ti-bucket" aria-hidden="true"></i>塗りつぶし</button>
+<button class="mbtn" data-act="picker"><i class="ti ti-color-picker" aria-hidden="true"></i>色の選択</button>
+<button class="mbtn" data-act="rotr"><i class="ti ti-rotate-clockwise-2" aria-hidden="true"></i>右へ90°回転</button>
+<button class="mbtn" data-act="fliph"><i class="ti ti-flip-horizontal" aria-hidden="true"></i>左右反転</button>
+<button class="mbtn" data-act="flipv"><i class="ti ti-flip-vertical" aria-hidden="true"></i>上下反転</button>
 </div>
 <div class="mrowx"><label>表示</label><button class="ib" id="mzout" title="縮小" aria-label="縮小" data-ic="zoomout"></button><button class="mbtn" id="mzpct" style="flex:1;min-height:40px">100%</button><button class="ib" id="mzin" title="拡大" aria-label="拡大" data-ic="zoomin"></button></div>
 </div>
@@ -504,7 +515,7 @@ body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],bod
 
 <script>
 const $=id=>document.getElementById(id);
-const P={select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',crop:'ti ti-crop',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out',dblarrow:'ti ti-arrows-horizontal',roundrect:'ti ti-square-rounded',triangle:'ti ti-triangle',diamond:'ti ti-diamond',pentagon:'ti ti-pentagon',hexagon:'ti ti-hexagon',star:'ti ti-star',heart:'ti ti-heart',bubble:'ti ti-message',cross:'ti ti-plus',tofront:'ti ti-arrow-bar-up',forward:'ti ti-arrow-up',backward:'ti ti-arrow-down',toback:'ti ti-arrow-bar-down',copy:'ti ti-copy',paste:'ti ti-clipboard',info:'ti ti-info-circle',check:'ti ti-check',fexport:'ti ti-file-export',fimport:'ti ti-file-import',resize:'ti ti-dimensions'};
+const P={fill:'ti ti-bucket',picker:'ti ti-color-picker',rotr:'ti ti-rotate-clockwise-2',fliph:'ti ti-flip-horizontal',flipv:'ti ti-flip-vertical',select:'ti ti-pointer',pen:'ti ti-pencil',eraser:'ti ti-eraser',text:'ti ti-typography',line:'ti ti-line',arrow:'ti ti-arrow-up-right',rect:'ti ti-rectangle',ellipse:'ti ti-circle',undo:'ti ti-arrow-back-up',redo:'ti ti-arrow-forward-up',trash:'ti ti-trash',crop:'ti ti-crop',grip:'ti ti-grip-vertical',layers:'ti ti-stack-2',close:'ti ti-x',plus:'ti ti-plus',up:'ti ti-chevron-up',down:'ti ti-chevron-down',eye:'ti ti-eye',eyeoff:'ti ti-eye-off',lock:'ti ti-lock',unlock:'ti ti-lock-open',back:'ti ti-arrow-left',more:'ti ti-dots',photo:'ti ti-photo-plus',zoomin:'ti ti-zoom-in',zoomout:'ti ti-zoom-out',dblarrow:'ti ti-arrows-horizontal',roundrect:'ti ti-square-rounded',triangle:'ti ti-triangle',diamond:'ti ti-diamond',pentagon:'ti ti-pentagon',hexagon:'ti ti-hexagon',star:'ti ti-star',heart:'ti ti-heart',bubble:'ti ti-message',cross:'ti ti-plus',tofront:'ti ti-arrow-bar-up',forward:'ti ti-arrow-up',backward:'ti ti-arrow-down',toback:'ti ti-arrow-bar-down',copy:'ti ti-copy',paste:'ti ti-clipboard',info:'ti ti-info-circle',check:'ti ti-check',fexport:'ti ti-file-export',fimport:'ti ti-file-import',resize:'ti ti-dimensions'};
 const ic=n=>'<i class="'+P[n]+'" aria-hidden="true"></i>';
 document.querySelectorAll('[data-ic]').forEach(b=>{b.innerHTML=ic(b.dataset.ic)});
 
@@ -1061,6 +1072,70 @@ canvas.on('mouse:down',o=>{
   drawing=makeShape(tool,p.x,p.y,p.x,p.y,false);
   busy=true;canvas.add(drawing);busy=false;
 });
+hints.fill='クリックした場所とつながった同じ色の範囲を、選んでいる色で塗りつぶします。';
+hints.picker='クリックした場所の色を取得します。Shiftを押しながらクリックすると塗りの色になります。';
+function sceneCanvas(x,y,w,h){return canvas.toCanvasElement(1,{left:x,top:y,width:w,height:h})}
+function bucketFill(pt){
+  const w=Math.round(CW),h=Math.round(CH);
+  const x=Math.floor(pt.x),y=Math.floor(pt.y);
+  if(x<0||y<0||x>=w||y>=h)return;
+  const src=sceneCanvas(0,0,w,h);
+  if(src.width!==w||src.height!==h)return;
+  const d=src.getContext('2d').getImageData(0,0,w,h).data;
+  const tc=document.createElement('canvas');tc.width=tc.height=1;
+  const tx=tc.getContext('2d');tx.fillStyle=fg;tx.fillRect(0,0,1,1);
+  const f=tx.getImageData(0,0,1,1).data;
+  const i0=(y*w+x)*4,tr=d[i0],tg=d[i0+1],tb=d[i0+2],ta=d[i0+3];
+  if(tr===f[0]&&tg===f[1]&&tb===f[2]&&ta===255)return;
+  const ok=n=>{const i=n*4;return Math.abs(d[i]-tr)+Math.abs(d[i+1]-tg)+Math.abs(d[i+2]-tb)+Math.abs(d[i+3]-ta)<=90};
+  const seen=new Uint8Array(w*h),out=new Uint8ClampedArray(w*h*4),stack=[y*w+x];
+  seen[stack[0]]=1;
+  const visit=m=>{if(seen[m])return;seen[m]=1;if(ok(m))stack.push(m)};
+  while(stack.length){
+    const n=stack.pop(),cx=n%w,i=n*4;
+    out[i]=f[0];out[i+1]=f[1];out[i+2]=f[2];out[i+3]=255;
+    if(cx>0)visit(n-1);
+    if(cx<w-1)visit(n+1);
+    if(n>=w)visit(n-w);
+    if(n<w*h-w)visit(n+w);
+  }
+  const oc=document.createElement('canvas');oc.width=w;oc.height=h;
+  oc.getContext('2d').putImageData(new ImageData(out,w,h),0,0);
+  canvas.add(new fabric.Image(oc,{left:0,top:0,selectable:false,evented:false}));
+  canvas.requestRenderAll();
+}
+function pickCanvasColor(pt,asBg){
+  const x=Math.floor(pt.x),y=Math.floor(pt.y);
+  if(x<0||y<0||x>=CW||y>=CH)return;
+  const d=sceneCanvas(x,y,1,1).getContext('2d').getImageData(0,0,1,1).data;
+  const hex='#'+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+  setCol(hex,asBg?'bg':'fg');
+}
+canvas.on('mouse:down',o=>{
+  if(ro||!o.e)return;
+  if(tool==='fill'){if(!blocked())bucketFill(canvas.getScenePoint(o.e))}
+  else if(tool==='picker')pickCanvasColor(canvas.getScenePoint(o.e),o.e.shiftKey);
+});
+function transformSel(kind){
+  const ao=canvas.getActiveObject();
+  if(!ao){toast('先にオブジェクトを選択してください');return}
+  if(kind==='rot'){const c=ao.getCenterPoint();ao.rotate((ao.angle||0)+90);ao.setPositionByOrigin(c,'center','center')}
+  else if(kind==='fh')ao.set('flipX',!ao.flipX);
+  else ao.set('flipY',!ao.flipY);
+  ao.setCoords();
+  canvas.requestRenderAll();
+  canvas.fire('object:modified',{target:ao});
+}
+$('rotr').onclick=()=>transformSel('rot');
+$('fliph').onclick=()=>transformSel('fh');
+$('flipv').onclick=()=>transformSel('fv');
+function selectAllObjects(){
+  if(tool!=='select')setTool('select');
+  const objs=canvas.getObjects().filter(o=>o.selectable&&o.visible);
+  if(!objs.length)return;
+  canvas.setActiveObject(objs.length===1?objs[0]:new fabric.ActiveSelection(objs,{canvas}));
+  canvas.requestRenderAll();
+}
 const GUIDE_COLOR='#f24822';
 let guideLines=[],guideLabels=[];
 const viewScale=()=>viewK*zoom;
@@ -1372,6 +1447,18 @@ function showMenuAt(cx,cy){
 })();
 canvas.on('object:modified',clearGuides);
 canvas.on('selection:cleared',clearGuides);
+const ARROWS={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
+let nudgeTimer=0,nudgeTarget=null;
+function nudge(d,step){
+  const o=canvas.getActiveObject();
+  if(!o)return;
+  o.set({left:o.left+d[0]*step,top:o.top+d[1]*step});
+  o.setCoords();
+  canvas.requestRenderAll();
+  nudgeTarget=o;
+  clearTimeout(nudgeTimer);
+  nudgeTimer=setTimeout(()=>{canvas.fire('object:modified',{target:nudgeTarget});nudgeTarget=null},350);
+}
 addEventListener('keydown',e=>{
   if($('editor').hidden||$('modal'))return;
   const ae=document.activeElement;if(ae&&(ae.tagName==='INPUT'||ae.tagName==='SELECT'))return;
@@ -1382,6 +1469,9 @@ addEventListener('keydown',e=>{
   else if(mod&&k==='y'){e.preventDefault();$('redo').click()}
   else if(mod&&k==='c'&&!e.shiftKey&&!e.altKey&&canvas.getActiveObjects().length){e.preventDefault();copySelection()}
   else if(mod&&k==='x'&&!e.shiftKey&&!e.altKey&&canvas.getActiveObjects().length){e.preventDefault();cutSelection()}
+  else if(mod&&k==='a'&&!e.shiftKey&&!e.altKey){e.preventDefault();selectAllObjects()}
+  else if(mod&&k==='s'&&!e.shiftKey&&!e.altKey){e.preventDefault();$('save').click()}
+  else if(!mod&&!e.altKey&&ARROWS[e.key]&&canvas.getActiveObjects().length){e.preventDefault();nudge(ARROWS[e.key],e.shiftKey?10:1)}
   else if(!mod&&!e.altKey){
     if(KEYS[k]){closeSheet();setTool(KEYS[k])}
     else if(k==='[')shapes.includes(tool)?setShapeLw(Math.max(1,slw-1)):setLw(Math.max(1,lw-1));
@@ -2504,7 +2594,7 @@ $('mundo').onclick=()=>$('undo').click();
 $('mredo').onclick=()=>$('redo').click();
 $('mmore').onclick=()=>toggleSheet('more');
 $('mclose').onclick=closeSheet;
-const ACTS={resize:'mresize',img:'imgBtn',save:'save',share:'share',del:'del',export:'pexp',import:'pimp'};
+const ACTS={fill:'fillT',picker:'pickT',rotr:'rotr',fliph:'fliph',flipv:'flipv',resize:'mresize',img:'imgBtn',save:'save',share:'share',del:'del',export:'pexp',import:'pimp'};
 document.querySelectorAll('#msheet [data-act]').forEach(b=>b.onclick=()=>{$(ACTS[b.dataset.act]).click();closeSheet()});
 $('mzout').onclick=()=>$('zout').click();
 $('mzin').onclick=()=>$('zin').click();
@@ -2585,7 +2675,7 @@ $('mitalic').onclick=()=>{textItalic=!textItalic;renderTextSheet();applyText({fo
 $('mts').oninput=e=>{textSize=+e.target.value;$('mtsv').textContent=textSize+'px';applyText({fontSize:textSize},true)};
 $('mts').onchange=()=>{if(activeText())snap()};
 
-const KEYS={v:'select',p:'pen',e:'eraser',t:'text',l:'line',a:'arrow',r:'rect',o:'ellipse'};
+const KEYS={v:'select',g:'fill',i:'picker',p:'pen',e:'eraser',t:'text',l:'line',a:'arrow',r:'rect',o:'ellipse'};
 const DOCK_TITLES={select:'選択 (V)',pen:'ペン (P)',eraser:'消しゴム (E)',shape:'図形 (L / A / R / O)',text:'文字 (T)',color:'色とサイズ ([ ] でサイズ変更)',layers:'レイヤー'};
 document.querySelectorAll('#mdock [data-mt]').forEach(b=>b.title=DOCK_TITLES[b.dataset.mt]);
 $('mimg').onclick=()=>$('imgBtn').click();
