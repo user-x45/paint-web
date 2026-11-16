@@ -964,7 +964,7 @@ canvas.on('mouse:down',o=>{
   drawing=makeShape(tool,p.x,p.y,p.x,p.y,false);
   busy=true;canvas.add(drawing);busy=false;
 });
-hints.fill='クリックした場所とつながった同じ色の範囲を、選んでいる色で塗りつぶします。';
+hints.fill='図形や文字はその色を直接変え、背景は背景レイヤーの色を変えます。線で囲まれた範囲は、その中を塗ります。';
 hints.picker='クリックした場所の色を取得します。Shiftを押しながらクリックすると塗りの色になります。';
 function sceneCanvas(x,y,w,h){return canvas.toCanvasElement(1,{left:x,top:y,width:w,height:h})}
 function bucketFill(pt){
@@ -982,19 +982,77 @@ function bucketFill(pt){
   const ok=n=>{const i=n*4;return Math.abs(d[i]-tr)+Math.abs(d[i+1]-tg)+Math.abs(d[i+2]-tb)+Math.abs(d[i+3]-ta)<=90};
   const seen=new Uint8Array(w*h),out=new Uint8ClampedArray(w*h*4),stack=[y*w+x];
   seen[stack[0]]=1;
+  let x0=x,x1=x,y0=y,y1=y;
   const visit=m=>{if(seen[m])return;seen[m]=1;if(ok(m))stack.push(m)};
   while(stack.length){
-    const n=stack.pop(),cx=n%w,i=n*4;
+    const n=stack.pop(),cx=n%w,cy=(n-cx)/w,i=n*4;
+    if(cx<x0)x0=cx;if(cx>x1)x1=cx;if(cy<y0)y0=cy;if(cy>y1)y1=cy;
     out[i]=f[0];out[i+1]=f[1];out[i+2]=f[2];out[i+3]=255;
     if(cx>0)visit(n-1);
     if(cx<w-1)visit(n+1);
     if(n>=w)visit(n-w);
     if(n<w*h-w)visit(n+w);
   }
-  const oc=document.createElement('canvas');oc.width=w;oc.height=h;
-  oc.getContext('2d').putImageData(new ImageData(out,w,h),0,0);
-  canvas.add(new fabric.Image(oc,{left:0,top:0,selectable:false,evented:false}));
+  const full=document.createElement('canvas');full.width=w;full.height=h;
+  full.getContext('2d').putImageData(new ImageData(out,w,h),0,0);
+  const bw=x1-x0+1,bh=y1-y0+1;
+  const oc=document.createElement('canvas');oc.width=bw;oc.height=bh;
+  oc.getContext('2d').drawImage(full,x0,y0,bw,bh,0,0,bw,bh);
+  canvas.add(new fabric.Image(oc,{left:x0,top:y0,selectable:false,evented:false}));
   canvas.requestRenderAll();
+}
+function hitsInside(o,pt){
+  const c=document.createElement('canvas');c.width=c.height=1;
+  const cx=c.getContext('2d');
+  cx.translate(-Math.floor(pt.x),-Math.floor(pt.y));
+  const f=o.fill,oc=o.objectCaching;
+  o.objectCaching=false;o.fill='#000';
+  o.render(cx);
+  o.fill=f;o.objectCaching=oc;o.dirty=true;
+  return cx.getImageData(0,0,1,1).data[3]>0;
+}
+function paintBackground(pt){
+  const B=layers.find(l=>l.bg);
+  if(!B||B.locked||!B.visible)return false;
+  const w=Math.round(CW),h=Math.round(CH),x=Math.floor(pt.x),y=Math.floor(pt.y);
+  if(x<0||y<0||x>=w||y>=h)return false;
+  const keep=canvas.backgroundColor;
+  canvas.backgroundColor='';
+  const src=sceneCanvas(0,0,w,h);
+  canvas.backgroundColor=keep;
+  if(src.width!==w||src.height!==h)return false;
+  const d=src.getContext('2d').getImageData(0,0,w,h).data;
+  const clear=n=>d[n*4+3]<=64;
+  if(!clear(y*w+x))return false;
+  const seen=new Uint8Array(w*h),stack=[y*w+x];
+  seen[stack[0]]=1;
+  let edge=false;
+  while(stack.length){
+    const n=stack.pop(),cx=n%w,cy=(n-cx)/w;
+    if(cx===0||cy===0||cx===w-1||cy===h-1){edge=true;break}
+    for(const m of [n-1,n+1,n-w,n+w]){if(!seen[m]){seen[m]=1;if(clear(m))stack.push(m)}}
+  }
+  if(!edge)return false;
+  if(B.color!==fg){B.color=fg;applyBackground();canvas.renderAll();renderLayers();snap()}
+  return true;
+}
+function paintObject(pt){
+  const list=canvas.getObjects();
+  for(let i=list.length-1;i>=0;i--){
+    const o=list[i],L=layerOf(o.layer);
+    if(!o.visible||!L||L.locked||isEraserStroke(o))continue;
+    const txt=o.type==='i-text'||o.type==='textbox'||o.type==='text';
+    if(!txt&&!(o.isShape&&o.type!=='line'&&o.type!=='group'))continue;
+    if(!o.containsPoint(pt))continue;
+    if(!txt&&!hitsInside(o,pt))continue;
+    if(o.fill!==fg){
+      o.set('fill',fg);
+      canvas.requestRenderAll();
+      canvas.fire('object:modified',{target:o});
+    }
+    return true;
+  }
+  return false;
 }
 function pickCanvasColor(pt,asBg){
   const x=Math.floor(pt.x),y=Math.floor(pt.y);
@@ -1005,7 +1063,7 @@ function pickCanvasColor(pt,asBg){
 }
 canvas.on('mouse:down',o=>{
   if(ro||!o.e)return;
-  if(tool==='fill'){if(!blocked())bucketFill(canvas.getScenePoint(o.e))}
+  if(tool==='fill'){const pt=canvas.getScenePoint(o.e);if(!paintObject(pt)&&!paintBackground(pt)&&!blocked())bucketFill(pt)}
   else if(tool==='picker')pickCanvasColor(canvas.getScenePoint(o.e),o.e.shiftKey);
 });
 function transformSel(kind){
