@@ -395,7 +395,6 @@ body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],bod
 <button class="mt" data-mt="select"><i class="ti ti-pointer" aria-hidden="true"></i><span>選択</span></button>
 <button class="mt" data-mt="pen"><i class="ti ti-pencil" aria-hidden="true"></i><span id="mpenl">ペン</span></button>
 <button class="mt" data-mt="eraser"><i class="ti ti-eraser" aria-hidden="true"></i><span>消しゴム</span></button>
-<button class="mt" data-mt="fill" title="塗りつぶし"><i class="ti ti-bucket" aria-hidden="true"></i><span>バケツ</span></button>
 <button class="mt" data-mt="shape"><i id="mshapeI" class="ti ti-rectangle" aria-hidden="true"></i><span id="mshapel">四角形</span></button>
 <button class="mt" data-mt="text"><i class="ti ti-typography" aria-hidden="true"></i><span>文字</span></button>
 <button id="mcolor" data-mt="color"><span id="mcol"></span><span>色</span></button>
@@ -429,6 +428,7 @@ body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],bod
 </div>
 <div data-p="shape" hidden><div class="mgrid g4" id="mshapes"></div><div class="mseg" id="mfill"></div><div class="mrowx"><label for="mslw">太さ</label><input type="range" id="mslw" min="1" max="40" value="4"><span id="mslwv">4px</span></div></div>
 <div data-p="color" hidden>
+<div class="mseg"><button class="mbtn" data-tool="fill"><i class="ti ti-bucket" aria-hidden="true"></i>バケツ</button><button class="mbtn" data-tool="picker"><i class="ti ti-color-picker" aria-hidden="true"></i>スポイト</button></div>
 <div class="mseg"><button class="mbtn on" id="mfg"><span class="msw" id="mfgsw" style="background:#000"></span>線・文字</button><button class="mbtn" id="mbg"><span class="msw" id="mbgsw" style="background:#fff"></span>塗り</button></div>
 <div id="mpal"></div>
 <div class="mrowx"><label for="mcustom">カスタム</label><button class="cpick" id="mcustom" title="色の編集" aria-label="色の編集" aria-haspopup="dialog" aria-expanded="false"><span class="cs" style="background:#0067c0"></span></button></div>
@@ -443,7 +443,6 @@ body.pglock #msheet [data-act="img"],body.pglock #msheet [data-act="resize"],bod
 <button class="mbtn" data-act="export"><i class="ti ti-file-export" aria-hidden="true"></i>ファイルに書き出し</button>
 <button class="mbtn" data-act="import"><i class="ti ti-file-import" aria-hidden="true"></i>ファイルを読み込む</button>
 <button class="mbtn" data-act="del"><i class="ti ti-trash" aria-hidden="true"></i>選択を削除</button>
-<button class="mbtn" data-act="picker"><i class="ti ti-color-picker" aria-hidden="true"></i>色の選択</button>
 </div>
 <div class="mrowx"><label>表示</label><button class="ib" id="mzout" title="縮小" aria-label="縮小" data-ic="zoomout"></button><button class="mbtn" id="mzpct" style="flex:1;min-height:40px">100%</button><button class="ib" id="mzin" title="拡大" aria-label="拡大" data-ic="zoomin"></button></div>
 </div>
@@ -2451,6 +2450,8 @@ function updateMobile(){
   const sh=shapes.includes(tool);
   if(sh)lastShape=tool;
   document.querySelectorAll('#mdock .mt').forEach(b=>b.classList.toggle('on',b.dataset.mt===tool||(b.dataset.mt==='shape'&&sh)));
+  document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool===tool));
+  $('mcolor').classList.toggle('on',tool==='fill'||tool==='picker');
   $('mpenl').textContent=PEN_NAMES[penType];
   $('mshapel').textContent=SHAPE_NAMES[lastShape];
   $('mshapeI').className=P[lastShape];
@@ -2508,7 +2509,7 @@ $('mundo').onclick=()=>doUndo();
 $('mredo').onclick=()=>doRedo();
 $('mmore').onclick=()=>toggleSheet('more');
 $('mclose').onclick=closeSheet;
-const ACTS={fill:()=>setTool('fill'),picker:()=>setTool('picker'),resize:()=>$('mresize').click(),img:()=>chooseImage('add'),save:()=>$('save').click(),share:()=>$('share').click(),del:doDel,export:()=>$('pexp').click(),import:()=>$('pimp').click()};
+const ACTS={resize:()=>$('mresize').click(),img:()=>chooseImage('add'),save:()=>$('save').click(),share:()=>$('share').click(),del:doDel,export:()=>$('pexp').click(),import:()=>$('pimp').click()};
 document.querySelectorAll('#msheet [data-act]').forEach(b=>b.onclick=()=>{ACTS[b.dataset.act]();closeSheet()});
 $('mzout').onclick=()=>$('zout').click();
 $('mzin').onclick=()=>$('zin').click();
@@ -2590,9 +2591,10 @@ $('mts').oninput=e=>{textSize=+e.target.value;$('mtsv').textContent=textSize+'px
 $('mts').onchange=()=>{if(activeText())snap()};
 
 const KEYS={v:'select',g:'fill',i:'picker',p:'pen',e:'eraser',t:'text',l:'line',a:'arrow',r:'rect',o:'ellipse'};
-const DOCK_TITLES={fill:'塗りつぶし (G)',select:'選択 (V)',pen:'ペン (P)',eraser:'消しゴム (E)',shape:'図形 (L / A / R / O)',text:'文字 (T)',color:'色とサイズ ([ ] でサイズ変更)',layers:'レイヤー'};
+const DOCK_TITLES={select:'選択 (V)',pen:'ペン (P)',eraser:'消しゴム (E)',shape:'図形 (L / A / R / O)',text:'文字 (T)',color:'色とサイズ ([ ] でサイズ変更)',layers:'レイヤー'};
 document.querySelectorAll('#mdock [data-mt]').forEach(b=>b.title=DOCK_TITLES[b.dataset.mt]);
 $('mimg').onclick=()=>chooseImage('add');
+document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{setTool(b.dataset.tool);closeSheet()});
 $('mdel').onclick=()=>doDel();
 addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 updateMobile();syncMobileColor();
